@@ -74,11 +74,17 @@ python -m app.scripts.seed_database --reference-only   # no synthetic observatio
 python -m app.scripts.show_index             # print the computed index
 ```
 
-Run the API (http://localhost:8000, docs at `/docs`):
+Run the API (http://localhost:8010, docs at `/docs`):
 
 ```bash
-uvicorn app.main:app --reload
+python run_dev.py            # single process on port 8010
+python run_dev.py --reload   # opt in to auto-reload
 ```
+
+> On Windows, prefer `run_dev.py` over `uvicorn --reload`: the reloader can leave a
+> child process holding the socket, causing `WinError 10013` on the next start. If
+> it happens anyway: `Get-NetTCPConnection -LocalPort 8010 | Select OwningProcess`
+> then `Stop-Process -Id <n> -Force`, or run `python run_dev.py --port 8020`.
 
 ### 2. Frontend
 
@@ -89,8 +95,8 @@ cp .env.example .env
 npm run dev                  # http://localhost:5173
 ```
 
-The Vite dev server proxies `/api` to `http://localhost:8000`, so no CORS setup is
-needed for local development.
+The Vite dev server proxies `/api` to `http://localhost:8010` (override with
+`VITE_API_PROXY`), so no CORS setup is needed for local development.
 
 ### 3. Sign in
 

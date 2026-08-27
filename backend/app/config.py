@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     app_name: str = "AIRINDEX API"
     app_env: str = "development"
     api_prefix: str = "/api"
+    # Local dev port (Render/production sets $PORT and uses its own start command).
+    app_port: int = 8010
 
     # ---- MongoDB ----
     mongodb_uri: str = "mongodb://localhost:27017"
