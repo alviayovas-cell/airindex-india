@@ -82,6 +82,13 @@ export interface LeadTimeWindow {
 export interface LeadTimeAnalysis {
   route_id: string | null;
   windows: LeadTimeWindow[];
+  filters?: {
+    airline: string | null;
+    fare_type: string | null;
+    date_from: string | null;
+    date_to: string | null;
+  };
+  filter_options?: { airlines: string[]; fare_types: string[] };
 }
 
 export interface AirlineStat {
@@ -106,6 +113,7 @@ export interface RouteDetail {
   index_history: { date: string; index_value: number }[];
   lead_time: LeadTimeAnalysis;
   airlines: { airline: string; average_fare: number; observation_count: number }[];
+  volatility: RouteVolatility | null;
 }
 
 export interface HeatmapRow {

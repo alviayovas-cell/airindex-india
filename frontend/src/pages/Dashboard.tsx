@@ -23,6 +23,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { IndexMetricCard } from "@/components/dashboard/IndexMetricCard";
 import { WhyChangedCard } from "@/components/dashboard/WhyChangedCard";
 import { IndexTrendChart } from "@/components/charts/IndexTrendChart";
+import { IndiaRouteMap } from "@/components/charts/IndiaRouteMap";
 import { LeadTimeChart } from "@/components/charts/LeadTimeChart";
 import { RouteHeatmap } from "@/components/charts/RouteHeatmap";
 import { Sparkline } from "@/components/charts/Sparkline";
@@ -230,6 +231,9 @@ export default function Dashboard() {
 
       {/* Why did the index change? */}
       <WhyChangedCard />
+
+      {/* Interactive India route map */}
+      <IndiaRouteMap />
 
       {/* Route performance + lead time */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

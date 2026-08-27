@@ -167,12 +167,17 @@ Sources page shows Amadeus as *Not configured*.
 ```bash
 cd backend
 pip install -r requirements-dev.txt   # adds pytest + in-memory Mongo
-pytest                                # 49 tests — unit + API, no external services
+pytest                                # 75 tests — unit + API, no external services
+
+cd ../frontend
+npm test                              # 12 Vitest unit tests (projection, formatting, CSV)
 ```
 
-Coverage: index formula (standalone), weights & missing-route renormalization,
-normalizer, cleaner (dedupe / missing / outlier), synthetic reproducibility,
-every REST endpoint, and the back-test (pipeline recovers the reference signal).
+Backend coverage: index formula (standalone), weights & missing-route
+renormalization + runtime config, normalizer, cleaner (dedupe / missing / outlier
+via MAD & IQR / currency & date guards), synthetic reproducibility, index
+explorer + observed contributors, route volatility, fare-spike classification,
+lead-time filters, every REST endpoint, and the back-test.
 
 ---
 
@@ -195,7 +200,7 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/airlines` | Airlines with observation counts and average fare |
 | GET | `/api/flights` | Observation explorer — filter / sort / paginate + filter options |
 | GET | `/api/flights/search?route_id=&advance_days=` | Ad-hoc live lookup (not stored) |
-| GET | `/api/analytics/lead-time?route=` | Avg / median / count by T+1…T+45 |
+| GET | `/api/analytics/lead-time?route=&airline=&fare_type=&date_from=&date_to=` | Avg / median / count by T+1…T+45, with filter options |
 | GET | `/api/analytics/volatility?window_days=` | Per-route experimental volatility score (0–100) + category |
 | GET | `/api/alerts/fare-spikes?window_days=&route_id=&airline=&severity=` | Fare increases vs the preceding period, classified against configurable thresholds |
 | GET | `/api/analytics/routes` | Route heatmap (route-level % change) |
@@ -297,7 +302,7 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | F          | Data-model & quality hardening, IQR outlier option, runtime index config (`/api/config`) | ✅ |
 | G          | Index Calculation Explorer + "Why did AIRINDEX change?" observed contributors | ✅ |
 | H          | Route price volatility + fare-spike detection & alerts | ✅ |
-| I          | Interactive India route map + lead-time filters | ⬜ |
+| I          | Interactive India route map + lead-time filters | ✅ |
 | J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ⬜ |
 | K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ⬜ |
 | L          | ML fare prediction, festival analysis, security/testing/UX/docs pass | ⬜ |

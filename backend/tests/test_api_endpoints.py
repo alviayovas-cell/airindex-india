@@ -71,6 +71,26 @@ def test_lead_time_curve_decreases_with_advance(api):
     assert fares == sorted(fares, reverse=True)  # earlier booking -> cheaper
 
 
+def test_lead_time_filters(api):
+    d = _data(api.get("/api/analytics/lead-time"))
+    assert d["filter_options"]["airlines"]
+    assert d["filter_options"]["fare_types"]
+
+    airline = d["filter_options"]["airlines"][0]
+    filtered = _data(api.get(f"/api/analytics/lead-time?route=DEL-BOM&airline={airline}"))
+    assert filtered["filters"]["airline"] == airline
+    total_all = sum(w["observation_count"] for w in d["windows"])
+    total_one = sum(w["observation_count"] for w in filtered["windows"])
+    assert 0 < total_one < total_all
+
+
+def test_route_detail_includes_volatility(api):
+    d = _data(api.get("/api/routes/DEL-BOM"))
+    assert d["volatility"] is not None
+    assert d["volatility"]["route_id"] == "DEL-BOM"
+    assert 0 <= d["volatility"]["volatility_score"] <= 100
+
+
 def test_route_heatmap(api):
     d = _data(api.get("/api/analytics/routes"))
     assert len(d["routes"]) == 6

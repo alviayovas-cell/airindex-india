@@ -6,6 +6,7 @@ import {
   fetchRouteHeatmap,
   fetchVolatility,
   type FareSpikeQuery,
+  type LeadTimeQuery,
 } from "@/api/analytics";
 import {
   fetchConfig,
@@ -45,10 +46,10 @@ export const useRouteDetail = (routeId: string | undefined) =>
     enabled: !!routeId,
   });
 
-export const useLeadTime = (route?: string) =>
+export const useLeadTime = (query: LeadTimeQuery = {}) =>
   useQuery({
-    queryKey: ["analytics", "lead-time", route ?? "all"],
-    queryFn: () => fetchLeadTime(route),
+    queryKey: ["analytics", "lead-time", query],
+    queryFn: () => fetchLeadTime(query),
     placeholderData: keepPreviousData,
   });
 

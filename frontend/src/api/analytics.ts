@@ -8,10 +8,23 @@ import type {
   VolatilityResponse,
 } from "@/types/models";
 
-export function fetchLeadTime(route?: string): Promise<LeadTimeAnalysis> {
+export interface LeadTimeQuery {
+  route?: string;
+  airline?: string;
+  fare_type?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
+export function fetchLeadTime(
+  q: LeadTimeQuery = {},
+): Promise<LeadTimeAnalysis> {
+  const params = Object.fromEntries(
+    Object.entries(q).filter(([, v]) => v),
+  );
   return request<LeadTimeAnalysis>(
     http.get<ApiResponse<LeadTimeAnalysis>>("/analytics/lead-time", {
-      params: route ? { route } : undefined,
+      params: Object.keys(params).length ? params : undefined,
     }),
   );
 }

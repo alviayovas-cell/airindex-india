@@ -105,6 +105,9 @@ async def route_detail(db: AsyncIOMotorDatabase, route_id: str) -> dict | None:
 
     lead_time = await lead_time_analysis(db, route.route_id)
     airlines = await _route_airline_breakdown(db, route.route_id)
+    vol = {
+        r["route_id"]: r for r in (await route_volatility(db))["routes"]
+    }.get(route.route_id)
 
     return {
         "route": route.model_dump(),
@@ -113,6 +116,7 @@ async def route_detail(db: AsyncIOMotorDatabase, route_id: str) -> dict | None:
         "index_history": history,
         "lead_time": lead_time,
         "airlines": airlines,
+        "volatility": vol,
     }
 
 
@@ -147,9 +151,22 @@ async def _route_airline_breakdown(db: AsyncIOMotorDatabase, route_id: str) -> l
 
 
 async def lead_time_analysis(
-    db: AsyncIOMotorDatabase, route_id: str | None = None
+    db: AsyncIOMotorDatabase,
+    route_id: str | None = None,
+    *,
+    airline: str | None = None,
+    fare_type: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
 ) -> dict:
-    pairs = await AirfareQuoteRepository(db).lead_time_pairs(route_id)
+    quote_repo = AirfareQuoteRepository(db)
+    pairs = await quote_repo.lead_time_pairs(
+        route_id,
+        airline=airline,
+        fare_type=fare_type,
+        date_from=date_from,
+        date_to=date_to,
+    )
     buckets: dict[str, list[float]] = {f"T+{w}": [] for w in ADVANCE_WINDOWS}
     for window, fare in pairs:
         buckets.setdefault(window, []).append(fare)
@@ -167,7 +184,20 @@ async def lead_time_analysis(
                 "observation_count": len(fares),
             }
         )
-    return {"route_id": route_id, "windows": windows}
+    return {
+        "route_id": route_id,
+        "filters": {
+            "airline": airline,
+            "fare_type": fare_type,
+            "date_from": date_from,
+            "date_to": date_to,
+        },
+        "filter_options": {
+            "airlines": await quote_repo.distinct_values("airline"),
+            "fare_types": await quote_repo.distinct_values("fare_type"),
+        },
+        "windows": windows,
+    }
 
 
 # --------------------------------------------------------------------------- #

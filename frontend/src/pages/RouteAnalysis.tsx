@@ -12,6 +12,7 @@ import { ChangeIndicator } from "@/components/common/ChangeIndicator";
 import { MiniAreaChart } from "@/components/charts/MiniAreaChart";
 import { LeadTimeChart } from "@/components/charts/LeadTimeChart";
 import { AirlineBarChart } from "@/components/charts/AirlineBarChart";
+import { IndiaRouteMap } from "@/components/charts/IndiaRouteMap";
 import { useRouteDetail, useRoutes } from "@/hooks/queries";
 import { formatCurrency, formatIndex, formatNumber } from "@/utils/format";
 
@@ -54,6 +55,8 @@ export default function RouteAnalysis() {
         }
       />
 
+      <IndiaRouteMap />
+
       <QueryBoundary
         query={detail}
         skeleton={
@@ -84,10 +87,14 @@ export default function RouteAnalysis() {
                 <p className="mt-1"><ChangeIndicator value={d.stats?.change_30d} size="xs" suffix="30d" /></p>
               </Card>
               <Card className="p-5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Observations</p>
-                <p className="mt-2 text-2xl font-bold tabular-nums">{formatNumber(d.stats?.observation_count)}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Volatility</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums">
+                  {d.volatility ? d.volatility.volatility_score.toFixed(0) : "—"}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  basket weight {((d.route.weight ?? 0) * 100).toFixed(0)}%
+                  {d.volatility?.category ?? "no history"} ·{" "}
+                  {formatNumber(d.stats?.observation_count)} obs · weight{" "}
+                  {((d.route.weight ?? 0) * 100).toFixed(0)}%
                 </p>
               </Card>
             </div>

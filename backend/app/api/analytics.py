@@ -22,10 +22,23 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 @router.get("/lead-time", response_model=ApiResponse[dict])
 async def get_lead_time(
     route: str | None = None,
+    airline: str | None = None,
+    fare_type: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     _: UserPublic = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> ApiResponse[dict]:
-    return ok(await lead_time_analysis(db, route))
+    return ok(
+        await lead_time_analysis(
+            db,
+            route,
+            airline=airline,
+            fare_type=fare_type,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    )
 
 
 @router.get("/routes", response_model=ApiResponse[dict])

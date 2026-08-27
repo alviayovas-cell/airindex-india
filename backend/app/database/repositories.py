@@ -210,11 +210,28 @@ class AirfareQuoteRepository:
         }
 
     async def lead_time_pairs(
-        self, route_id: str | None = None
+        self,
+        route_id: str | None = None,
+        *,
+        airline: str | None = None,
+        fare_type: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> list[tuple[str, float]]:
         q: dict = {"status": QuoteStatus.VALID.value, "total_fare": {"$gt": 0}}
         if route_id:
             q["route_id"] = route_id.upper()
+        if airline:
+            q["airline"] = airline.upper()
+        if fare_type:
+            q["fare_type"] = fare_type.lower()
+        if date_from or date_to:
+            rng: dict = {}
+            if date_from:
+                rng["$gte"] = date_from
+            if date_to:
+                rng["$lte"] = date_to
+            q["collection_date"] = rng
         out: list[tuple[str, float]] = []
         async for doc in self.col.find(q, {"advance_window": 1, "total_fare": 1}):
             out.append((doc["advance_window"], float(doc["total_fare"])))

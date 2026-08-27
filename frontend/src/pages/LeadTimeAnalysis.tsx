@@ -12,29 +12,81 @@ import { useLeadTime, useRoutes } from "@/hooks/queries";
 import { formatCurrency, formatNumber } from "@/utils/format";
 
 export default function LeadTimeAnalysis() {
-  const [route, setRoute] = useState<string>("");
+  const [route, setRoute] = useState("");
+  const [airline, setAirline] = useState("");
+  const [fareType, setFareType] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [metric, setMetric] = useState<"average_fare" | "median_fare">("average_fare");
+
   const routes = useRoutes();
-  const leadTime = useLeadTime(route || undefined);
+  const leadTime = useLeadTime({
+    route: route || undefined,
+    airline: airline || undefined,
+    fare_type: fareType || undefined,
+    date_from: dateFrom || undefined,
+    date_to: dateTo || undefined,
+  });
+
+  const opts = leadTime.data?.filter_options;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Booking Window Analysis"
         description="Understand how airfare changes with advance-purchase timing across T+1 to T+45."
-        actions={
-          <div className="w-56">
-            <Select
-              options={[
-                { value: "", label: "All routes" },
-                ...(routes.data?.routes.map((r) => ({ value: r.route_id, label: r.label })) ?? []),
-              ]}
-              value={route}
-              onChange={(e) => setRoute(e.target.value)}
+      />
+
+      <Card>
+        <CardHeader title="Filters" description="Narrow the observations feeding the curve." />
+        <CardBody className="grid gap-3 pt-0 sm:grid-cols-2 lg:grid-cols-5">
+          <Select
+            label="Route"
+            value={route}
+            onChange={(e) => setRoute(e.target.value)}
+            options={[
+              { value: "", label: "All routes" },
+              ...(routes.data?.routes.map((r) => ({ value: r.route_id, label: r.label })) ?? []),
+            ]}
+          />
+          <Select
+            label="Airline"
+            value={airline}
+            onChange={(e) => setAirline(e.target.value)}
+            options={[
+              { value: "", label: "All airlines" },
+              ...(opts?.airlines.map((a) => ({ value: a, label: a })) ?? []),
+            ]}
+          />
+          <Select
+            label="Fare type"
+            value={fareType}
+            onChange={(e) => setFareType(e.target.value)}
+            options={[
+              { value: "", label: "All fare types" },
+              ...(opts?.fare_types.map((f) => ({ value: f, label: f })) ?? []),
+            ]}
+          />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">From</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-9 w-full rounded-lg border border-input bg-card px-3 text-sm focus:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             />
           </div>
-        }
-      />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">To</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-9 w-full rounded-lg border border-input bg-card px-3 text-sm focus:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            />
+          </div>
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader

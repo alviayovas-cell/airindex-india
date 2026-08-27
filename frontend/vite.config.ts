@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
@@ -16,5 +17,11 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+  },
+  test: {
+    // Default to the fast Node env; component specs opt in with
+    // `// @vitest-environment jsdom` at the top of the file.
+    environment: "node",
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
