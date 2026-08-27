@@ -1,13 +1,21 @@
-import { useState } from "react";
-import { Check, Monitor, Moon, Sun } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Monitor, Moon, RotateCcw, Save, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, CardHeader } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
+import { Button } from "@/components/common/Button";
+import { Input } from "@/components/common/Input";
+import { Select } from "@/components/common/Select";
 import { StatusIndicator } from "@/components/common/StatusIndicator";
 import { cn } from "@/lib/cn";
 import { useTheme, type ThemeMode } from "@/lib/theme";
 import { useAuth } from "@/hooks/useAuth";
-import { useCollectionStatus, useMethodology } from "@/hooks/queries";
+import {
+  useCollectionStatus,
+  useConfig,
+  useUpdateIndexConfig,
+  useUpdateWeights,
+} from "@/hooks/queries";
 import { formatDate, formatTime } from "@/utils/format";
 
 const TABS = ["Profile", "Appearance", "Index Configuration", "Routes", "Collection"] as const;
@@ -23,7 +31,7 @@ export default function Settings() {
   const [tab, setTab] = useState<Tab>("Appearance");
   const { mode, setMode } = useTheme();
   const { user } = useAuth();
-  const methodology = useMethodology();
+  const config = useConfig();
   const collection = useCollectionStatus();
 
   return (
@@ -88,49 +96,8 @@ export default function Settings() {
         </Card>
       )}
 
-      {tab === "Index Configuration" && (
-        <Card>
-          <CardHeader
-            title="Index configuration"
-            description="The frozen parameters behind the current index (edit via app_config / seed)."
-          />
-          <CardBody className="space-y-3">
-            <Field label="Methodology version" value={methodology.data?.methodology_version ?? "—"} />
-            <Field label="Base period" value={formatDate(methodology.data?.base_period)} />
-            <Field
-              label="Advance windows"
-              value={
-                methodology.data?.advance_windows.map((w) => `T+${w}`).join(", ") ?? "—"
-              }
-            />
-            <Field
-              label="Weights sum"
-              value={methodology.data ? methodology.data.weights_sum.toFixed(2) : "—"}
-            />
-          </CardBody>
-        </Card>
-      )}
-
-      {tab === "Routes" && (
-        <Card>
-          <CardHeader title="Route basket" description="City-pairs and weights in the index." />
-          <CardBody className="pt-0">
-            <div className="divide-y divide-border">
-              {(methodology.data?.route_basket ?? []).map((r) => (
-                <div key={r.route_id} className="flex items-center justify-between py-2.5 text-sm">
-                  <span>
-                    <span className="font-medium">{r.label}</span>
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {r.origin_city} – {r.destination_city}
-                    </span>
-                  </span>
-                  <Badge>{((r.weight ?? 0) * 100).toFixed(0)}%</Badge>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      )}
+      {tab === "Index Configuration" && <IndexConfigTab config={config} />}
+      {tab === "Routes" && <RouteWeightsTab config={config} />}
 
       {tab === "Collection" && (
         <Card>
@@ -174,6 +141,193 @@ export default function Settings() {
         </Card>
       )}
     </div>
+  );
+}
+
+type ConfigQuery = ReturnType<typeof useConfig>;
+
+function IndexConfigTab({ config }: { config: ConfigQuery }) {
+  const update = useUpdateIndexConfig();
+  const [basePeriod, setBasePeriod] = useState("");
+  const [version, setVersion] = useState("");
+  const [method, setMethod] = useState("mad");
+
+  useEffect(() => {
+    if (config.data) {
+      setBasePeriod(config.data.base_period);
+      setVersion(config.data.methodology_version);
+      setMethod(config.data.outlier_method);
+    }
+  }, [config.data]);
+
+  if (!config.data) {
+    return <Card className="p-6 text-sm text-muted-foreground">Loading configuration…</Card>;
+  }
+
+  const d = config.data;
+  const dirty =
+    basePeriod !== d.base_period ||
+    version !== d.methodology_version ||
+    method !== d.outlier_method;
+
+  return (
+    <Card>
+      <CardHeader
+        title="Index configuration"
+        description="Parameters behind the current index. Saving recomputes the whole series."
+      />
+      <CardBody className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input
+            label="Base period (index = 100)"
+            type="date"
+            value={basePeriod}
+            onChange={(e) => setBasePeriod(e.target.value)}
+          />
+          <Input
+            label="Methodology version"
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+          />
+          <Select
+            label="Outlier detection method"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            options={d.outlier_methods.map((m) => ({
+              value: m,
+              label: m === "mad" ? "Modified z-score (median + MAD)" : "IQR / Tukey fence",
+            }))}
+          />
+          <Field
+            label="Advance windows"
+            value={d.advance_windows.map((w) => `T+${w}`).join(", ")}
+          />
+        </div>
+        <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+          The outlier method applies to the <strong>next</strong> collection run; base period
+          and version take effect immediately on save.
+        </p>
+        {update.isError && (
+          <p className="text-xs text-danger">{(update.error as Error).message}</p>
+        )}
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            loading={update.isPending}
+            disabled={!dirty}
+            onClick={() =>
+              update.mutate({
+                base_period: basePeriod,
+                methodology_version: version,
+                outlier_method: method,
+              })
+            }
+          >
+            <Save className="h-4 w-4" /> Save
+          </Button>
+          {update.isSuccess && !dirty && (
+            <span className="text-xs text-success">Saved · index recomputed</span>
+          )}
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function RouteWeightsTab({ config }: { config: ConfigQuery }) {
+  const update = useUpdateWeights();
+  const [weights, setWeights] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (config.data) setWeights({ ...config.data.weights_raw });
+  }, [config.data]);
+
+  const sum = useMemo(
+    () => Object.values(weights).reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0),
+    [weights],
+  );
+  const normalized = (rid: string) => (sum > 0 ? (weights[rid] ?? 0) / sum : 0);
+
+  if (!config.data) {
+    return <Card className="p-6 text-sm text-muted-foreground">Loading configuration…</Card>;
+  }
+
+  const d = config.data;
+  const dirty = d.routes.some(
+    (r) => (weights[r.route_id] ?? 0) !== (d.weights_raw[r.route_id] ?? 0),
+  );
+  const invalid = sum <= 0 || Object.values(weights).some((v) => v < 0 || !Number.isFinite(v));
+
+  return (
+    <Card>
+      <CardHeader
+        title="Route basket weights"
+        description="Relative weights are renormalized to sum to 1.0. Saving recomputes the index."
+      />
+      <CardBody className="space-y-1 pt-0">
+        <div className="divide-y divide-border">
+          {d.routes.map((r) => (
+            <div key={r.route_id} className="flex items-center justify-between gap-4 py-2.5">
+              <span className="min-w-0">
+                <span className="font-medium">{r.label}</span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {r.origin_city} – {r.destination_city}
+                </span>
+              </span>
+              <div className="flex items-center gap-3">
+                <span className="w-12 text-right text-xs tabular-nums text-muted-foreground">
+                  {(normalized(r.route_id) * 100).toFixed(1)}%
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={weights[r.route_id] ?? 0}
+                  onChange={(e) =>
+                    setWeights((w) => ({
+                      ...w,
+                      [r.route_id]: e.target.value === "" ? 0 : Number(e.target.value),
+                    }))
+                  }
+                  className="h-9 w-24 rounded-lg border border-input bg-card px-2 text-right text-sm tabular-nums focus:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between pt-3 text-sm">
+          <span className="text-muted-foreground">Raw sum</span>
+          <Badge tone={invalid ? "danger" : "accent"}>{sum.toFixed(2)} → normalized 1.00</Badge>
+        </div>
+
+        {update.isError && (
+          <p className="text-xs text-danger">{(update.error as Error).message}</p>
+        )}
+
+        <div className="flex items-center gap-3 pt-2">
+          <Button
+            size="sm"
+            loading={update.isPending}
+            disabled={!dirty || invalid}
+            onClick={() => update.mutate(weights)}
+          >
+            <Save className="h-4 w-4" /> Save weights
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={!dirty}
+            onClick={() => setWeights({ ...d.weights_raw })}
+          >
+            <RotateCcw className="h-4 w-4" /> Reset
+          </Button>
+          {update.isSuccess && !dirty && (
+            <span className="text-xs text-success">Saved · index recomputed</span>
+          )}
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 

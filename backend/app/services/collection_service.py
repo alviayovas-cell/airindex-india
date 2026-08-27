@@ -133,7 +133,9 @@ async def _store_and_reindex(
     db: AsyncIOMotorDatabase, raws: list[RawQuote], *, append: bool
 ) -> dict:
     quote_repo = AirfareQuoteRepository(db)
-    cleaning = clean(raws)
+    config = ConfigRepository(db)
+    outlier_method = await config.get("cleaning.outlier_method", "mad")
+    cleaning = clean(raws, outlier_method=outlier_method)
 
     if append:
         stored = await quote_repo.insert_many(cleaning.quotes)
@@ -144,6 +146,6 @@ async def _store_and_reindex(
         quote_repo,
         IndexRepository(db),
         DataQualityRepository(db),
-        ConfigRepository(db),
+        config,
     )
     return {"stored": stored, "counts": cleaning.counts, "index": index_summary}

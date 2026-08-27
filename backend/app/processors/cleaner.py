@@ -13,10 +13,18 @@ from __future__ import annotations
 import hashlib
 from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date
 
 from app.models.airfare import AirfareQuote, QuoteStatus, RawQuote
 from app.processors.normalizer import normalize
-from app.processors.outlier import DEFAULT_THRESHOLD, flag_outliers
+from app.processors.outlier import (
+    DEFAULT_THRESHOLD,
+    flag_outliers,
+    flag_outliers_iqr,
+)
+
+#: currencies the INR-denominated prototype index can use directly
+SUPPORTED_CURRENCIES = {"INR"}
 
 
 @dataclass
@@ -44,6 +52,33 @@ def _dedupe_key(q: AirfareQuote) -> str:
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
 
 
+def _validate_observation(q: AirfareQuote) -> None:
+    """Schema-level content checks (spec §Part 4: invalid currency / dates /
+    malformed values). Offending rows are marked, never dropped."""
+    if q.status != QuoteStatus.VALID:
+        return
+
+    if q.currency not in SUPPORTED_CURRENCIES:
+        q.status = QuoteStatus.MISSING
+        q.quality_flags.append(f"unsupported_currency_{q.currency.lower()}")
+        return
+
+    try:
+        travel = date.fromisoformat(q.travel_date)
+    except (ValueError, TypeError):
+        q.status = QuoteStatus.MISSING
+        q.quality_flags.append("invalid_travel_date")
+        return
+    if travel <= q.collected_at.date():
+        q.status = QuoteStatus.MISSING
+        q.quality_flags.append("travel_date_not_after_collection")
+        return
+
+    if q.total_fare is not None and q.total_fare < 0:
+        q.status = QuoteStatus.MISSING
+        q.quality_flags.append("negative_total_fare")
+
+
 def _apply_missing_rules(q: AirfareQuote) -> None:
     """Assign a status when the fare is unusable. Documented rule (PRD §7 FR-06)."""
     if q.total_fare is not None and q.total_fare > 0:
@@ -60,9 +95,18 @@ def _apply_missing_rules(q: AirfareQuote) -> None:
         q.quality_flags.append("missing_total_fare")
 
 
-def clean(raws: list[RawQuote], *, outlier_threshold: float = DEFAULT_THRESHOLD) -> CleaningResult:
+def clean(
+    raws: list[RawQuote],
+    *,
+    outlier_threshold: float = DEFAULT_THRESHOLD,
+    outlier_method: str = "mad",
+) -> CleaningResult:
     # Stage 1–2: schema already enforced by RawQuote; normalize types.
     quotes = [normalize(r) for r in raws]
+
+    # Stage 2b: content validation (currency / dates / malformed values).
+    for q in quotes:
+        _validate_observation(q)
 
     # Stage 3: duplicate detection (first occurrence kept).
     seen: set[str] = set()
@@ -75,20 +119,26 @@ def clean(raws: list[RawQuote], *, outlier_threshold: float = DEFAULT_THRESHOLD)
         else:
             seen.add(key)
 
-    # Stage 4: missing-value rules (skip rows already marked duplicate).
+    # Stage 4: missing-value rules (only rows still considered valid).
     for q in quotes:
-        if q.status == QuoteStatus.DUPLICATE:
+        if q.status != QuoteStatus.VALID:
             continue
         _apply_missing_rules(q)
 
     # Stage 5: outlier flagging on robust per-(route, window) fare distributions.
+    if outlier_method == "iqr":
+        flagger = flag_outliers_iqr
+    else:
+        def flagger(vals: list[float]) -> list[bool]:
+            return flag_outliers(vals, outlier_threshold)
+
     groups: dict[tuple[str, str], list[int]] = defaultdict(list)
     for idx, q in enumerate(quotes):
         if q.status == QuoteStatus.VALID and q.total_fare:
             groups[(q.route_id, q.advance_window)].append(idx)
     for members in groups.values():
         values = [quotes[i].total_fare or 0.0 for i in members]
-        for member_idx, is_out in zip(members, flag_outliers(values, outlier_threshold)):
+        for member_idx, is_out in zip(members, flagger(values)):
             if is_out:
                 quotes[member_idx].status = QuoteStatus.OUTLIER
                 quotes[member_idx].quality_flags.append("price_outlier")

@@ -202,6 +202,9 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/collection/status` | Last collection run |
 | POST | `/api/collection/run?mode=auto\|amadeus\|synthetic` | Trigger a collection + reindex |
 | GET | `/api/methodology` | Base period, basket, weights, formula, rules, disclaimer |
+| GET | `/api/config` | Runtime index config: weights (raw + normalized), base period, outlier method |
+| PUT | `/api/config/weights` | Update route-basket weights (renormalized) and recompute the index |
+| PUT | `/api/config/index` | Update base period / methodology version / outlier method (`mad` \| `iqr`) |
 | GET | `/api/backtest` | 30-day validation: our index vs reference, MAE/RMSE/correlation |
 | GET | `/api/reports?date_from=&date_to=&route_id=&frequency=` | Summary + per-period rows |
 
@@ -255,8 +258,13 @@ I(t) = 100 × Σ [ wᵢ × ( Pᵢ(t) / Pᵢ(0) ) ]     with  Σ wᵢ = 1
 - **Route basket & weights** (editable in `app_config`):
   DEL-BOM 25% · DEL-BLR 20% · BOM-BLR 20% · DEL-CCU 15% · BLR-HYD 10% · MAA-DEL 10%
 - **Advance windows:** T+1, T+7, T+15, T+30, T+45
-- Outliers are **flagged, never deleted** (robust median / MAD).
+- Outliers are **flagged, never deleted** — robust modified z-score (median / MAD) by
+  default, or Tukey-fence IQR, selectable via `PUT /api/config/index`.
+- Content validation flags unsupported currency, invalid/mis-ordered travel dates and
+  negative fares (status set, row retained).
 - Missing route observations follow a documented missing-data rule.
+- Route-basket weights, base period and outlier method are runtime-editable (Settings →
+  Index Configuration / Routes, or `PUT /api/config/*`); every change recomputes the index.
 
 Full methodology is versioned and shown on the in-app **Methodology** page.
 

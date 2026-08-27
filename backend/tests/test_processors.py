@@ -5,7 +5,13 @@ from datetime import datetime, timezone
 from app.models.airfare import QuoteStatus, RawQuote
 from app.processors.cleaner import clean
 from app.processors.normalizer import normalize
-from app.processors.outlier import flag_outliers, modified_z_scores, normal_range
+from app.processors.outlier import (
+    flag_outliers,
+    flag_outliers_iqr,
+    iqr_bounds,
+    modified_z_scores,
+    normal_range,
+)
 
 
 def _raw(**over) -> RawQuote:
@@ -113,3 +119,45 @@ def test_normal_range_returns_band():
     assert band is not None
     lo, hi = band
     assert lo < 4100 < hi
+
+
+def test_iqr_bounds_and_flagging():
+    values = [100, 101, 99, 100, 102, 98, 100, 5000]
+    bounds = iqr_bounds(values)
+    assert bounds is not None
+    flags = flag_outliers_iqr(values)
+    assert flags[-1] is True
+    assert sum(flags) == 1
+
+
+def test_iqr_bounds_none_for_degenerate_input():
+    assert iqr_bounds([100, 100, 100, 100]) is None
+    assert iqr_bounds([1, 2]) is None
+
+
+def test_clean_iqr_method_flags_outlier_not_deleted():
+    raws = [_raw(flight_number=f"6E{i}", total_fare=5000.0 + i * 15) for i in range(12)]
+    raws.append(_raw(flight_number="6E-SPIKE", total_fare=40000.0))
+    result = clean(raws, outlier_method="iqr")
+    spike = [q for q in result.quotes if q.flight_number == "6E-SPIKE"][0]
+    assert spike.status == QuoteStatus.OUTLIER
+    assert len(result.quotes) == 13  # nothing dropped
+
+
+def test_clean_flags_unsupported_currency():
+    q = clean([_raw(currency="usd")]).quotes[0]
+    assert q.status == QuoteStatus.MISSING
+    assert any("unsupported_currency" in f for f in q.quality_flags)
+
+
+def test_clean_flags_invalid_travel_date():
+    # travel date before the collection date
+    q = clean([_raw(travel_date="2026-08-01")]).quotes[0]
+    assert q.status == QuoteStatus.MISSING
+    assert "travel_date_not_after_collection" in q.quality_flags
+
+
+def test_clean_flags_negative_fare():
+    q = clean([_raw(total_fare=-1200.0)]).quotes[0]
+    assert q.status == QuoteStatus.MISSING
+    assert "negative_total_fare" in q.quality_flags

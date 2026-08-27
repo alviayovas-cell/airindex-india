@@ -144,6 +144,7 @@ class AmadeusCollector(FlightDataCollector):
                 availability=seats > 0,
                 source=self.name,
                 provider_status="sold_out" if seats == 0 else "ok",
+                raw_offer=raw,
             )
         except (KeyError, IndexError, TypeError, ValueError):
             return None

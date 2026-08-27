@@ -7,12 +7,18 @@ deleted.
 
 from __future__ import annotations
 
-from statistics import median
+from statistics import median, quantiles
 
 # 0.6745 = 75th percentile of the standard normal; scales MAD to be comparable
 # to a standard deviation for normally-distributed data.
 _MAD_SCALE = 0.6745
 DEFAULT_THRESHOLD = 3.5
+
+# Tukey fence multiplier for the IQR method (1.5 = "outlier", 3.0 = "far out").
+DEFAULT_IQR_K = 1.5
+
+#: outlier methods selectable via the `cleaning.outlier_method` app_config key
+OUTLIER_METHODS = ("mad", "iqr")
 
 
 def modified_z_scores(values: list[float]) -> list[float]:
@@ -37,6 +43,35 @@ def flag_outliers(
 ) -> list[bool]:
     """True where |modified z-score| exceeds the threshold."""
     return [abs(z) > threshold for z in modified_z_scores(values)]
+
+
+def iqr_bounds(
+    values: list[float], k: float = DEFAULT_IQR_K
+) -> tuple[float, float] | None:
+    """Tukey fences [Q1 - k·IQR, Q3 + k·IQR]. Needs >= 4 points and IQR > 0.
+
+    IQR is a documented, distribution-free alternative to the MAD z-score
+    (spec §Part 4). Legitimate but extreme fare movements outside the fence are
+    *flagged*, never deleted.
+    """
+    if len(values) < 4:
+        return None
+    q1, _, q3 = quantiles(values, n=4, method="inclusive")
+    iqr = q3 - q1
+    if iqr <= 0:
+        return None
+    return (q1 - k * iqr, q3 + k * iqr)
+
+
+def flag_outliers_iqr(
+    values: list[float], k: float = DEFAULT_IQR_K
+) -> list[bool]:
+    """True where a value falls outside the Tukey fence."""
+    bounds = iqr_bounds(values, k)
+    if bounds is None:
+        return [False] * len(values)
+    lo, hi = bounds
+    return [v < lo or v > hi for v in values]
 
 
 def normal_range(

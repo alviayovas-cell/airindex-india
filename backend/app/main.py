@@ -19,6 +19,7 @@ from app.api import (
     auth,
     backtest,
     collection,
+    config as config_api,
     data_quality,
     flights,
     index,
@@ -125,6 +126,7 @@ for module in (
     methodology,
     backtest,
     reports,
+    config_api,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
 

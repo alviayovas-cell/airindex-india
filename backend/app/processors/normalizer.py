@@ -29,17 +29,20 @@ def normalize(raw: RawQuote) -> AirfareQuote:
     if raw.total_fare is None and total is not None:
         flags.append("total_fare_derived")
 
+    fare_class = (raw.fare_class or "standard").lower()
     return AirfareQuote(
         route_id=raw.route_id.upper(),
         origin=raw.origin.upper(),
         destination=raw.destination.upper(),
         airline=raw.airline.upper(),
+        airline_name=raw.airline_name,
         flight_number=(raw.flight_number or None),
         travel_date=raw.travel_date,
         collected_at=raw.collected_at,
         advance_days=int(raw.advance_days),
         cabin=raw.cabin.title() if raw.cabin else "Economy",
-        fare_class=(raw.fare_class or "standard").lower(),
+        fare_class=fare_class,
+        fare_type=(raw.fare_type or fare_class),
         base_fare=base,
         taxes=taxes,
         fees=fees,
@@ -48,6 +51,7 @@ def normalize(raw: RawQuote) -> AirfareQuote:
         availability=bool(raw.availability),
         source=raw.source,
         provider_status=raw.provider_status,
+        raw_offer=raw.raw_offer,
         advance_window=advance_window_label(int(raw.advance_days)),
         collection_date=raw.collected_at.date().isoformat(),
         status=QuoteStatus.VALID,

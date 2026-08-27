@@ -28,12 +28,15 @@ class RawQuote(BaseModel):
     origin: str
     destination: str
     airline: str
+    airline_name: str | None = None
     flight_number: str | None = None
     travel_date: str  # ISO date
     collected_at: datetime
     advance_days: int
     cabin: str = "Economy"
     fare_class: str = "standard"
+    #: display alias for fare_class (spec §Part 2 field list)
+    fare_type: str | None = None
     base_fare: float | None = None
     taxes: float | None = None
     fees: float | None = None
@@ -43,6 +46,8 @@ class RawQuote(BaseModel):
     source: str
     #: optional provider signal: "sold_out", "cancelled", "ok" …
     provider_status: str | None = None
+    #: raw provider payload kept for auditability (Amadeus only; None for synthetic)
+    raw_offer: dict | None = None
 
 
 class AirfareQuote(RawQuote):
@@ -66,10 +71,12 @@ class AirfareQuoteOut(BaseModel):
     destination: str
     route_id: str
     airline: str
+    airline_name: str | None = None
     travel_date: str
     advance_days: int
     advance_window: str
     fare_class: str
+    fare_type: str | None = None
     cabin: str
     base_fare: float | None
     taxes: float | None

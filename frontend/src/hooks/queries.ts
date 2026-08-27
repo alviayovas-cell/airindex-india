@@ -1,5 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAirlineComparison, fetchLeadTime, fetchRouteHeatmap } from "@/api/analytics";
+import {
+  fetchConfig,
+  updateIndexConfig,
+  updateWeights,
+  type IndexConfigPatch,
+} from "@/api/config";
 import { fetchFlights, type FlightQuery } from "@/api/flights";
 import { fetchCurrentIndex, fetchIndexHistory, fetchOverview } from "@/api/index";
 import { fetchMethodology } from "@/api/methodology";
@@ -77,6 +83,25 @@ export const useReport = (query: ReportQuery, enabled = true) =>
     enabled,
     placeholderData: keepPreviousData,
   });
+
+export const useConfig = () =>
+  useQuery({ queryKey: ["config"], queryFn: fetchConfig });
+
+export const useUpdateWeights = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (weights: Record<string, number>) => updateWeights(weights),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+};
+
+export const useUpdateIndexConfig = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: IndexConfigPatch) => updateIndexConfig(patch),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+};
 
 export const useRunCollection = () => {
   const qc = useQueryClient();

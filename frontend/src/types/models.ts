@@ -277,6 +277,25 @@ export interface Report {
   rows: ReportRow[];
 }
 
+export interface IndexConfig {
+  base_period: string;
+  methodology_version: string;
+  advance_windows: number[];
+  outlier_method: string;
+  outlier_methods: string[];
+  spike_thresholds: Record<string, number>;
+  weights_raw: Record<string, number>;
+  weights: Record<string, number>;
+  weights_sum: number;
+  routes: {
+    route_id: string;
+    label: string;
+    origin_city: string | null;
+    destination_city: string | null;
+  }[];
+  reindex?: { index_points?: number; days?: number; base_period?: string };
+}
+
 export interface Methodology {
   methodology_version: string;
   base_period: string;

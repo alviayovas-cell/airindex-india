@@ -104,8 +104,14 @@ async def ensure_indexes() -> None:
     await db.airfare_quotes.create_index([("travel_date", ASCENDING)])
     await db.airfare_quotes.create_index([("collected_at", DESCENDING)])
     await db.airfare_quotes.create_index([("advance_days", ASCENDING)])
+    await db.airfare_quotes.create_index([("advance_window", ASCENDING)])
+    await db.airfare_quotes.create_index([("source", ASCENDING)])
+    await db.airfare_quotes.create_index([("status", ASCENDING)])
     await db.airfare_quotes.create_index(
         [("route_id", ASCENDING), ("collected_at", DESCENDING)]
+    )
+    await db.airfare_quotes.create_index(
+        [("route_id", ASCENDING), ("collection_date", ASCENDING)]
     )
     # De-duplication key (see processors.cleaner).
     await db.airfare_quotes.create_index("dedupe_key", sparse=True)
