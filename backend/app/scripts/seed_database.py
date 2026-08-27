@@ -27,11 +27,13 @@ from app.domain import (
 
 
 async def seed() -> None:
-    connected = await Database.ping()
+    connected = await Database.ping(force=True)
     if not connected:
         raise SystemExit(
-            f"Cannot reach MongoDB at {settings.mongodb_uri}. "
-            "Start local Mongo (docker compose up -d) or set MONGODB_URI."
+            f"Cannot reach MongoDB at {settings.mongodb_uri_safe}\n"
+            "  - check MONGODB_URI in backend/.env (one line, real password, no spaces)\n"
+            "  - in Atlas > Network Access, allow your IP or 0.0.0.0/0\n"
+            "  - if SRV/DNS keeps timing out, use the non-SRV 'Legacy' connection string"
         )
 
     db = Database.get_db()

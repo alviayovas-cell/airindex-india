@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # ---- MongoDB ----
     mongodb_uri: str = "mongodb://localhost:27017"
     database_name: str = "airfare_index"
+    # Generous enough for Atlas SRV lookups on slower networks; the ping result
+    # is cached so this cost is only paid occasionally.
+    mongo_server_selection_timeout_ms: int = 8000
+    mongo_connect_timeout_ms: int = 10000
 
     # ---- Auth ----
     jwt_secret: str = "change-me-in-production"
@@ -51,6 +55,16 @@ class Settings(BaseSettings):
     @property
     def amadeus_configured(self) -> bool:
         return bool(self.amadeus_client_id and self.amadeus_client_secret)
+
+    @property
+    def mongodb_uri_safe(self) -> str:
+        """The URI with any credentials masked, safe for logs / error messages."""
+        uri = self.mongodb_uri
+        if "@" in uri and "://" in uri:
+            scheme, rest = uri.split("://", 1)
+            _, host = rest.split("@", 1)
+            return f"{scheme}://***:***@{host}"
+        return uri
 
 
 @lru_cache

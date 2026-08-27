@@ -18,7 +18,10 @@ from app.config import settings
 logger = logging.getLogger("airindex.db")
 
 # How long a ping result is trusted before re-checking connectivity.
-_PING_TTL_SECONDS = 10.0
+# A successful result is cached longer; a failure is retried soon so a slow
+# first connection (e.g. Atlas SRV/DNS) doesn't lock the app into degraded mode.
+_PING_TTL_OK_SECONDS = 15.0
+_PING_TTL_FAIL_SECONDS = 3.0
 
 # Collections used by the prototype (see PRD §16).
 COLLECTIONS = (
@@ -43,16 +46,21 @@ class Database:
         if cls.client is None:
             cls.client = AsyncIOMotorClient(
                 settings.mongodb_uri,
-                serverSelectionTimeoutMS=1500,
-                connectTimeoutMS=1500,
+                serverSelectionTimeoutMS=settings.mongo_server_selection_timeout_ms,
+                connectTimeoutMS=settings.mongo_connect_timeout_ms,
                 uuidRepresentation="standard",
             )
-            logger.info("Mongo client initialised for %s", settings.database_name)
+            logger.info(
+                "Mongo client initialised (%s / %s)",
+                settings.mongodb_uri_safe,
+                settings.database_name,
+            )
 
     @classmethod
     async def ping(cls, *, force: bool = False) -> bool:
         now = time.monotonic()
-        if not force and (now - cls._last_ping) < _PING_TTL_SECONDS and cls._last_ping:
+        ttl = _PING_TTL_OK_SECONDS if cls._connected else _PING_TTL_FAIL_SECONDS
+        if not force and cls._last_ping and (now - cls._last_ping) < ttl:
             return cls._connected
         try:
             cls.connect()
