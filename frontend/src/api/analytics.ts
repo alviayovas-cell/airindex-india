@@ -3,6 +3,7 @@ import type { ApiResponse } from "@/types/api";
 import type {
   AirlineStat,
   FareSpikesResponse,
+  FestivalAnalysis,
   LeadTimeAnalysis,
   RouteHeatmap,
   VolatilityResponse,
@@ -63,6 +64,21 @@ export function fetchFareSpikes(
   return request<FareSpikesResponse>(
     http.get<ApiResponse<FareSpikesResponse>>("/alerts/fare-spikes", {
       params: q,
+    }),
+  );
+}
+
+export interface FestivalQuery {
+  event?: string;
+  route_id?: string;
+  airline?: string;
+}
+
+export function fetchFestivals(q: FestivalQuery = {}): Promise<FestivalAnalysis> {
+  const params = Object.fromEntries(Object.entries(q).filter(([, v]) => v));
+  return request<FestivalAnalysis>(
+    http.get<ApiResponse<FestivalAnalysis>>("/analytics/festivals", {
+      params: Object.keys(params).length ? params : undefined,
     }),
   );
 }

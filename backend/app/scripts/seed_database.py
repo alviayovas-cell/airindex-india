@@ -65,6 +65,20 @@ async def seed(*, days: int, reference_only: bool) -> None:
     if idx.get("note"):
         print(f"  note     : {idx['note']}")
 
+    print("  model    : training fare-range predictor ...")
+    try:
+        from app.ml.train import train as train_model
+
+        summary = await train_model()
+        if summary.get("version"):
+            print(f"  model    : ok - {summary['version']}")
+        else:
+            print(f"  model    : skipped - {summary.get('reason')}")
+    except ImportError:
+        print("  model    : skipped - scikit-learn not installed")
+    except Exception as exc:  # noqa: BLE001 - training must not block seeding
+        print(f"  model    : skipped - {exc}")
+
     await Database.close()
     print("Seed complete.")
 

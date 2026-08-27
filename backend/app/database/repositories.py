@@ -320,6 +320,41 @@ class AirfareQuoteRepository:
         rows.sort(key=lambda r: r["date"])
         return rows
 
+    async def training_rows(self) -> list[dict]:
+        """VALID observations with the fields the fare-prediction model needs."""
+        cursor = self.col.find(
+            {"status": QuoteStatus.VALID.value, "total_fare": {"$gt": 0}},
+            {
+                "_id": 0,
+                "route_id": 1,
+                "origin": 1,
+                "destination": 1,
+                "airline": 1,
+                "fare_type": 1,
+                "fare_class": 1,
+                "advance_days": 1,
+                "advance_window": 1,
+                "travel_date": 1,
+                "collection_date": 1,
+                "total_fare": 1,
+            },
+        )
+        return [doc async for doc in cursor]
+
+    async def valid_travel_date_fares(
+        self, route_id: str | None = None, airline: str | None = None
+    ) -> list[tuple[str, float]]:
+        """(travel_date, total_fare) for VALID observations — for festival analysis."""
+        q: dict = {"status": QuoteStatus.VALID.value, "total_fare": {"$gt": 0}}
+        if route_id:
+            q["route_id"] = route_id.upper()
+        if airline:
+            q["airline"] = airline.upper()
+        out: list[tuple[str, float]] = []
+        async for doc in self.col.find(q, {"_id": 0, "travel_date": 1, "total_fare": 1}):
+            out.append((doc["travel_date"], float(doc["total_fare"])))
+        return out
+
     async def status_counts(
         self, filters: dict, *, by: str | None = None
     ) -> list[tuple[str, str, int]]:

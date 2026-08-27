@@ -55,6 +55,23 @@ ROUTE_BASE_FARE: dict[str, int] = {
 }
 
 
+# Indian holidays / festivals for the optional event-impact analysis (PRD §Part 15).
+# Dates are approximate for movable festivals and are configuration, not law —
+# edit freely. The analysis only reports events whose travel window overlaps the
+# data actually collected.
+INDIA_EVENTS: list[dict] = [
+    {"name": "Independence Day", "date": "2026-08-15", "type": "national_holiday"},
+    {"name": "Raksha Bandhan", "date": "2026-08-28", "type": "festival"},
+    {"name": "Janmashtami", "date": "2026-09-04", "type": "festival"},
+    {"name": "Gandhi Jayanti", "date": "2026-10-02", "type": "national_holiday"},
+    {"name": "Dussehra", "date": "2026-10-20", "type": "festival"},
+    {"name": "Diwali", "date": "2026-11-08", "type": "festival"},
+    {"name": "Christmas", "date": "2026-12-25", "type": "national_holiday"},
+    {"name": "New Year", "date": "2027-01-01", "type": "national_holiday"},
+    {"name": "Pongal / Makar Sankranti", "date": "2027-01-14", "type": "festival"},
+]
+
+
 def route_label(route_id: str) -> str:
     origin, _, dest = route_id.partition("-")
     return f"{origin} → {dest}"

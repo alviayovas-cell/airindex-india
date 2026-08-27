@@ -28,6 +28,7 @@ from app.api import (
     meta,
     methodology,
     overview,
+    predictions,
     reports,
     routes,
 )
@@ -131,6 +132,7 @@ for module in (
     config_api,
     alerts,
     ai,
+    predictions,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
 

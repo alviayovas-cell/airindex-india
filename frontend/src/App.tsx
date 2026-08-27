@@ -14,6 +14,8 @@ const LeadTimeAnalysis = lazy(() => import("@/pages/LeadTimeAnalysis"));
 const Volatility = lazy(() => import("@/pages/Volatility"));
 const Alerts = lazy(() => import("@/pages/Alerts"));
 const AiAssistant = lazy(() => import("@/pages/AiAssistant"));
+const Predictions = lazy(() => import("@/pages/Predictions"));
+const Festivals = lazy(() => import("@/pages/Festivals"));
 const Validation = lazy(() => import("@/pages/Validation"));
 const DataQuality = lazy(() => import("@/pages/DataQuality"));
 const DataSources = lazy(() => import("@/pages/DataSources"));
@@ -43,6 +45,8 @@ export default function App() {
           <Route path="/volatility" element={<Volatility />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/assistant" element={<AiAssistant />} />
+          <Route path="/predictions" element={<Predictions />} />
+          <Route path="/festivals" element={<Festivals />} />
           <Route path="/validation" element={<Validation />} />
           <Route path="/data-quality" element={<DataQuality />} />
           <Route path="/sources" element={<DataSources />} />

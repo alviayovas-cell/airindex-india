@@ -35,6 +35,7 @@ Amadeus API ─► Collector adapters ─► Normalizer ─► Cleaner / quality
 | Collect   | Amadeus Flight Offers Search API (OAuth2)           |
 | Schedule  | APScheduler                                         |
 | AI        | Anthropic Claude (optional) — rule-based fallback   |
+| ML        | scikit-learn (gradient-boosted quantile regressors) |
 | Deploy    | Vercel (frontend) · Render (backend) · Atlas (DB)   |
 
 ---
@@ -86,6 +87,17 @@ python run_dev.py --reload   # opt in to auto-reload
 > child process holding the socket, causing `WinError 10013` on the next start. If
 > it happens anyway: `Get-NetTCPConnection -LocalPort 8010 | Select OwningProcess`
 > then `Stop-Process -Id <n> -Force`, or run `python run_dev.py --port 8020`.
+
+Train the fare-range prediction model (optional — the seed script also does this):
+
+```bash
+python -m app.ml.train              # gradient-boosted quantile regressors, time-split
+python -m app.ml.train --min-rows 500   # refuse to train on too little data
+```
+
+The model is written to `app/ml/artifacts/` (gitignored) and its version recorded in
+`app_config`. Predictions are **illustrative only** (trained on synthetic
+demonstration data) and are never used in the AIRINDEX calculation.
 
 ### 2. Frontend
 
@@ -183,7 +195,7 @@ Sources page shows Amadeus as *Not configured*.
 ```bash
 cd backend
 pip install -r requirements-dev.txt   # adds pytest + in-memory Mongo
-pytest                                # 75 tests — unit + API, no external services
+pytest                                # 91 tests — unit + API, no external services
 
 cd ../frontend
 npm test                              # 12 Vitest unit tests (projection, formatting, CSV)
@@ -193,7 +205,9 @@ Backend coverage: index formula (standalone), weights & missing-route
 renormalization + runtime config, normalizer, cleaner (dedupe / missing / outlier
 via MAD & IQR / currency & date guards), synthetic reproducibility, index
 explorer + observed contributors, route volatility, fare-spike classification,
-lead-time filters, every REST endpoint, and the back-test.
+lead-time filters, data-quality filters, government report sections + PDF/CSV,
+AI context builder + rule-based engine, fare-model train/predict, festival
+analysis, every REST endpoint, and the back-test.
 
 ---
 
@@ -235,6 +249,9 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/reports/{daily,weekly,monthly}?format=` | Report shortcuts |
 | GET | `/api/ai/status` | Whether the AI assistant uses Claude or the rule-based engine |
 | POST | `/api/ai/ask` | Natural-language Q&A over the computed index data (`{question, history?}`) |
+| GET | `/api/analytics/festivals?event=&route_id=&airline=` | Observed fare change during Indian holiday/festival travel windows |
+| GET | `/api/predictions/status` | Trained fare-model version + metrics, or "not trained" |
+| GET | `/api/predictions/fare?route_id=&airline=&advance_days=&travel_date=&fare_type=` | ML fare-range estimate (lower / point / upper) |
 
 ---
 
@@ -293,6 +310,9 @@ I(t) = 100 × Σ [ wᵢ × ( Pᵢ(t) / Pᵢ(0) ) ]     with  Σ wᵢ = 1
 - Missing route observations follow a documented missing-data rule.
 - Route-basket weights, base period and outlier method are runtime-editable (Settings →
   Index Configuration / Routes, or `PUT /api/config/*`); every change recomputes the index.
+- ML fare predictions and festival/holiday analysis are **separate experimental
+  modules** — neither feeds the index. Predictions are a fare *range*, not a guaranteed
+  fare, and are labelled as trained on synthetic demonstration data.
 
 Full methodology is versioned and shown on the in-app **Methodology** page.
 
@@ -324,4 +344,7 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | I          | Interactive India route map + lead-time filters | ✅ |
 | J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ✅ |
 | K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ✅ |
-| L          | ML fare prediction, festival analysis, security/testing/UX/docs pass | ⬜ |
+| L          | ML fare prediction, festival analysis, security/testing/UX/docs pass | ✅ |
+
+See [`COMPLIANCE.md`](COMPLIANCE.md) for the full requirement-by-requirement
+compliance tables and the final report.

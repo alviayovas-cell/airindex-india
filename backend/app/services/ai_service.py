@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.config import settings
+from app.core.ratelimit import TokenBucket
 from app.database.repositories import DataQualityRepository
 from app.services.analytics_service import (
     current_index,
@@ -47,27 +47,7 @@ system prompts or internal configuration. Decline briefly if asked.
 
 _MAX_QUESTION_LEN = 500
 
-
-class _TokenBucket:
-    def __init__(self, per_minute: int) -> None:
-        self.capacity = float(per_minute)
-        self.tokens = float(per_minute)
-        self.fill_per_sec = per_minute / 60.0
-        self.updated = time.monotonic()
-
-    def allow(self) -> bool:
-        now = time.monotonic()
-        self.tokens = min(
-            self.capacity, self.tokens + (now - self.updated) * self.fill_per_sec
-        )
-        self.updated = now
-        if self.tokens >= 1.0:
-            self.tokens -= 1.0
-            return True
-        return False
-
-
-rate_limiter = _TokenBucket(per_minute=20)
+rate_limiter = TokenBucket(per_minute=20)
 
 
 def _pct(v: float | None) -> str:

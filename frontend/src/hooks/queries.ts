@@ -2,12 +2,19 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   fetchAirlineComparison,
   fetchFareSpikes,
+  fetchFestivals,
   fetchLeadTime,
   fetchRouteHeatmap,
   fetchVolatility,
   type FareSpikeQuery,
+  type FestivalQuery,
   type LeadTimeQuery,
 } from "@/api/analytics";
+import {
+  fetchFarePrediction,
+  fetchModelInfo,
+  type FarePredictionQuery,
+} from "@/api/predictions";
 import {
   fetchConfig,
   updateIndexConfig,
@@ -69,6 +76,24 @@ export const useFareSpikes = (query: FareSpikeQuery = {}) =>
   useQuery({
     queryKey: ["alerts", "fare-spikes", query],
     queryFn: () => fetchFareSpikes(query),
+    placeholderData: keepPreviousData,
+  });
+
+export const useFestivals = (query: FestivalQuery = {}) =>
+  useQuery({
+    queryKey: ["analytics", "festivals", query],
+    queryFn: () => fetchFestivals(query),
+    placeholderData: keepPreviousData,
+  });
+
+export const useModelInfo = () =>
+  useQuery({ queryKey: ["predictions", "status"], queryFn: fetchModelInfo });
+
+export const useFarePrediction = (query: FarePredictionQuery, enabled: boolean) =>
+  useQuery({
+    queryKey: ["predictions", "fare", query],
+    queryFn: () => fetchFarePrediction(query),
+    enabled,
     placeholderData: keepPreviousData,
   });
 

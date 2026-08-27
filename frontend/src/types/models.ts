@@ -480,6 +480,70 @@ export interface IndexExplain {
   disclaimer?: string;
 }
 
+export interface ModelMetrics {
+  mae: number;
+  rmse: number;
+  mape_pct: number;
+  interval_coverage_pct: number;
+  mean_interval_width: number;
+}
+
+export interface ModelInfo {
+  available: boolean;
+  reason?: string;
+  version?: string;
+  trained_at?: string;
+  algorithm?: string;
+  metrics?: ModelMetrics;
+  n_train?: number;
+  n_test?: number;
+  data_basis?: string;
+  features?: string[];
+  disclaimer?: string;
+}
+
+export interface FarePrediction {
+  available: boolean;
+  reason?: string;
+  route_id?: string;
+  airline?: string;
+  fare_type?: string;
+  advance_days?: number;
+  travel_date?: string;
+  prediction_horizon_days?: number;
+  predicted_lower_inr?: number;
+  predicted_point_inr?: number;
+  predicted_upper_inr?: number;
+  interval?: string;
+  model_version?: string;
+  model_metrics?: ModelMetrics;
+  data_basis?: string;
+  disclaimer?: string;
+}
+
+export interface FestivalEvent {
+  name: string;
+  date: string;
+  type: string;
+  event_period: { from: string; to: string };
+  in_data_range: boolean;
+  event_observations: number;
+  event_avg_fare: number | null;
+  normal_avg_fare: number | null;
+  observed_change_pct: number | null;
+}
+
+export interface FestivalAnalysis {
+  available: boolean;
+  message?: string;
+  data_range: { from: string; to: string };
+  normal_avg_fare: number | null;
+  window_days: number;
+  filters: { event: string | null; route_id: string | null; airline: string | null };
+  disclaimer: string;
+  events: FestivalEvent[];
+}
+
 export interface IndexConfig {
   base_period: string;
   methodology_version: string;

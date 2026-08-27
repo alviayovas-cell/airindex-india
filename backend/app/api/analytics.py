@@ -15,6 +15,7 @@ from app.services.analytics_service import (
     route_heatmap,
     route_volatility,
 )
+from app.services.festival_service import analyze_festivals
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -74,3 +75,14 @@ async def get_volatility(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> ApiResponse[dict]:
     return ok(await route_volatility(db, window_days))
+
+
+@router.get("/festivals", response_model=ApiResponse[dict])
+async def get_festivals(
+    event: str | None = None,
+    route_id: str | None = None,
+    airline: str | None = None,
+    _: UserPublic = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> ApiResponse[dict]:
+    return ok(await analyze_festivals(db, event=event, route_id=route_id, airline=airline))

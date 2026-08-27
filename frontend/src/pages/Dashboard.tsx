@@ -6,7 +6,9 @@ import {
   BarChart3,
   Building2,
   Clock,
+  Brain,
   LineChart as LineChartIcon,
+  PartyPopper,
   Plane,
   ShieldCheck,
   Sparkles,
@@ -402,6 +404,38 @@ export default function Dashboard() {
           </Link>
         </div>
       </Card>
+
+      {/* Prediction + festival entry points */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {[
+          {
+            to: "/predictions",
+            icon: Brain,
+            title: "Fare Prediction",
+            desc: "ML fare-range estimate for a future trip (synthetic-trained, experimental).",
+          },
+          {
+            to: "/festivals",
+            icon: PartyPopper,
+            title: "Festival Analysis",
+            desc: "Observed fare movement during Indian holiday and festival travel windows.",
+          },
+        ].map((c) => (
+          <Link
+            key={c.to}
+            to={c.to}
+            className="flex items-start gap-3 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-accent"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <c.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold">{c.title}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{c.desc}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       {/* Route table preview */}
       <Card>
