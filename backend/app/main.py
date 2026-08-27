@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
 from app.api import (
+    ai,
     airlines,
     alerts,
     analytics,
@@ -129,6 +130,7 @@ for module in (
     reports,
     config_api,
     alerts,
+    ai,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
 

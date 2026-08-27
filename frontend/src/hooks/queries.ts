@@ -15,6 +15,7 @@ import {
   type IndexConfigPatch,
 } from "@/api/config";
 import { fetchIndexCalculation, fetchIndexExplain } from "@/api/explain";
+import { askAi, fetchAiStatus, type AiTurn } from "@/api/ai";
 import { fetchFlights, type FlightQuery } from "@/api/flights";
 import { fetchCurrentIndex, fetchIndexHistory, fetchOverview } from "@/api/index";
 import { fetchMethodology } from "@/api/methodology";
@@ -144,6 +145,15 @@ export const useUpdateIndexConfig = () => {
     onSuccess: () => qc.invalidateQueries(),
   });
 };
+
+export const useAiStatus = () =>
+  useQuery({ queryKey: ["ai", "status"], queryFn: fetchAiStatus, staleTime: 5 * 60_000 });
+
+export const useAskAi = () =>
+  useMutation({
+    mutationFn: ({ question, history }: { question: string; history: AiTurn[] }) =>
+      askAi(question, history),
+  });
 
 export const useRunCollection = () => {
   const qc = useQueryClient();

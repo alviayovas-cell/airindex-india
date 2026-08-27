@@ -9,6 +9,7 @@ import {
   LineChart as LineChartIcon,
   Plane,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardBody, CardHeader } from "@/components/common/Card";
 import { buttonClasses } from "@/components/common/Button";
@@ -380,6 +381,27 @@ export default function Dashboard() {
           </CardBody>
         </Card>
       </div>
+
+      {/* AI assistant CTA */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold">AIRINDEX Assistant</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Ask why the index moved, which route is most volatile, or how a
+                city-pair is trending — answered from the computed data.
+              </p>
+            </div>
+          </div>
+          <Link to="/assistant" className={buttonClasses({ variant: "accent" })}>
+            Open assistant <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </Card>
 
       {/* Route table preview */}
       <Card>

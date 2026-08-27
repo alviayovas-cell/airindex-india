@@ -47,6 +47,17 @@ class Settings(BaseSettings):
     collection_interval_minutes: int = 60
     collection_enabled: bool = False
 
+    # ---- AI assistant ----
+    # When disabled or the key is blank, /api/ai/ask falls back to a rule-based engine.
+    ai_enabled: bool = False
+    anthropic_api_key: str = ""
+    ai_model: str = "claude-sonnet-5"
+    ai_max_history: int = 6
+
+    @property
+    def ai_configured(self) -> bool:
+        return bool(self.ai_enabled and self.anthropic_api_key)
+
     # ---- CORS ----
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 

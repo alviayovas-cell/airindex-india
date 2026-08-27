@@ -34,6 +34,7 @@ Amadeus API ─► Collector adapters ─► Normalizer ─► Cleaner / quality
 | Database  | MongoDB Atlas (or local MongoDB)                    |
 | Collect   | Amadeus Flight Offers Search API (OAuth2)           |
 | Schedule  | APScheduler                                         |
+| AI        | Anthropic Claude (optional) — rule-based fallback   |
 | Deploy    | Vercel (frontend) · Render (backend) · Atlas (DB)   |
 
 ---
@@ -125,10 +126,25 @@ Password: airindex123
 | `COLLECTION_INTERVAL_MINUTES` | Scheduled collection cadence                                  |
 | `COLLECTION_ENABLED`          | `true` to start the APScheduler job on boot                   |
 | `CORS_ORIGINS`                | Comma-separated allowed origins for the deployed frontend     |
+| `AI_ENABLED`                  | `true` to route the AI assistant to Claude (else rule-based)  |
+| `ANTHROPIC_API_KEY`           | Claude API key — backend-only, never in the frontend          |
+| `AI_MODEL`                    | Claude model id (default `claude-sonnet-5`)                   |
 
-**The Amadeus client secret must only ever live in `backend/.env`** — never in the
-frontend, never committed to git. `.env` is gitignored; `.env.example` holds
-placeholders only.
+**The Amadeus client secret and the Anthropic API key must only ever live in
+`backend/.env`** — never in the frontend, never committed to git. `.env` is
+gitignored; `.env.example` holds placeholders only.
+
+### AI assistant
+
+`POST /api/ai/ask` answers natural-language questions using only a compact
+structured snapshot of the *computed* index (current index, route sub-indexes,
+volatility, observed contributors, lead-time, data-quality headline) — never raw
+observations, never configuration. With `AI_ENABLED=false` or a blank
+`ANTHROPIC_API_KEY` it uses a built-in **rule-based engine** (current index / most
+volatile route / route lookup / compare / best window / why-changed / data
+quality); set the key to route through Claude with a strict grounding prompt.
+Per-process rate limiting, an 18 s timeout, and graceful fallback to the
+rule-based engine on any LLM error.
 
 ### `frontend/.env`
 
@@ -217,6 +233,8 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/backtest` | 30-day validation: our index vs reference, MAE/RMSE/correlation, limitations, external-reference status |
 | GET | `/api/reports?date_from=&date_to=&route_id=&frequency=&format=` | Full government-style report; `format` = `json` \| `csv` \| `pdf` |
 | GET | `/api/reports/{daily,weekly,monthly}?format=` | Report shortcuts |
+| GET | `/api/ai/status` | Whether the AI assistant uses Claude or the rule-based engine |
+| POST | `/api/ai/ask` | Natural-language Q&A over the computed index data (`{question, history?}`) |
 
 ---
 
@@ -305,5 +323,5 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | H          | Route price volatility + fare-spike detection & alerts | ✅ |
 | I          | Interactive India route map + lead-time filters | ✅ |
 | J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ✅ |
-| K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ⬜ |
+| K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ✅ |
 | L          | ML fare prediction, festival analysis, security/testing/UX/docs pass | ⬜ |

@@ -12,6 +12,7 @@ import {
   FileBarChart,
   BookOpenText,
   GitCompareArrows,
+  Sparkles,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +32,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Lead-time Analysis", to: "/lead-time", icon: CalendarClock },
   { label: "Volatility", to: "/volatility", icon: Gauge },
   { label: "Fare Spike Alerts", to: "/alerts", icon: BellRing },
+  { label: "AI Assistant", to: "/assistant", icon: Sparkles },
   { label: "Validation", to: "/validation", icon: GitCompareArrows },
   { label: "Data Quality", to: "/data-quality", icon: ShieldCheck },
   { label: "Data Sources", to: "/sources", icon: Plug },
