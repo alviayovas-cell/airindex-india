@@ -247,6 +247,62 @@ class AirfareQuoteRepository:
             }
         return out
 
+    async def daily_aggregates(
+        self,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        route_id: str | None = None,
+    ) -> list[dict]:
+        match: dict = {}
+        if route_id:
+            match["route_id"] = route_id.upper()
+        if date_from or date_to:
+            rng: dict = {}
+            if date_from:
+                rng["$gte"] = date_from
+            if date_to:
+                rng["$lte"] = date_to
+            match["collection_date"] = rng
+        pipeline: list[dict] = []
+        if match:
+            pipeline.append({"$match": match})
+        pipeline.append(
+            {
+                "$group": {
+                    "_id": "$collection_date",
+                    "total": {"$sum": 1},
+                    "valid": {
+                        "$sum": {
+                            "$cond": [{"$eq": ["$status", QuoteStatus.VALID.value]}, 1, 0]
+                        }
+                    },
+                    "fare_sum": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$status", QuoteStatus.VALID.value]},
+                                "$total_fare",
+                                0,
+                            ]
+                        }
+                    },
+                }
+            }
+        )
+        rows: list[dict] = []
+        async for doc in self.col.aggregate(pipeline):
+            valid = doc["valid"] or 0
+            rows.append(
+                {
+                    "date": doc["_id"],
+                    "total": doc["total"],
+                    "valid": valid,
+                    "average_fare": round(doc["fare_sum"] / valid, 0) if valid else None,
+                    "quality_pct": round(100.0 * valid / doc["total"], 1) if doc["total"] else 0.0,
+                }
+            )
+        rows.sort(key=lambda r: r["date"])
+        return rows
+
     async def airline_stats(self) -> list[dict]:
         pipeline = [
             {"$match": {"status": QuoteStatus.VALID.value, "total_fare": {"$gt": 0}}},

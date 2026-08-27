@@ -17,6 +17,7 @@ from app.api import (
     airlines,
     analytics,
     auth,
+    backtest,
     collection,
     data_quality,
     flights,
@@ -24,11 +25,13 @@ from app.api import (
     meta,
     methodology,
     overview,
+    reports,
     routes,
 )
 from app.config import settings
 from app.core.errors import AppError
 from app.database.connection import Database, ensure_indexes
+from app.services.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("airindex")
@@ -44,7 +47,9 @@ async def lifespan(app: FastAPI):
             logger.warning("Could not ensure indexes: %s", exc)
     else:
         logger.warning("Starting in DEGRADED mode — MongoDB not reachable")
+    start_scheduler()
     yield
+    stop_scheduler()
     await Database.close()
 
 
@@ -118,6 +123,8 @@ for module in (
     data_quality,
     collection,
     methodology,
+    backtest,
+    reports,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
 

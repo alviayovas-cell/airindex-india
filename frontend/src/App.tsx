@@ -10,6 +10,7 @@ const AirfareData = lazy(() => import("@/pages/AirfareData"));
 const RouteAnalysis = lazy(() => import("@/pages/RouteAnalysis"));
 const PriceIndex = lazy(() => import("@/pages/PriceIndex"));
 const LeadTimeAnalysis = lazy(() => import("@/pages/LeadTimeAnalysis"));
+const Validation = lazy(() => import("@/pages/Validation"));
 const DataQuality = lazy(() => import("@/pages/DataQuality"));
 const DataSources = lazy(() => import("@/pages/DataSources"));
 const Reports = lazy(() => import("@/pages/Reports"));
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/routes" element={<RouteAnalysis />} />
           <Route path="/index" element={<PriceIndex />} />
           <Route path="/lead-time" element={<LeadTimeAnalysis />} />
+          <Route path="/validation" element={<Validation />} />
           <Route path="/data-quality" element={<DataQuality />} />
           <Route path="/sources" element={<DataSources />} />
           <Route path="/reports" element={<Reports />} />

@@ -223,6 +223,60 @@ export interface CollectionRun {
   note?: string;
 }
 
+export interface BacktestPoint {
+  date: string;
+  our_index: number;
+  reference_index: number;
+  difference: number;
+  pct_deviation: number | null;
+}
+
+export interface Backtest {
+  available: boolean;
+  message?: string;
+  data_status: string;
+  data_status_label: string;
+  methodology_version: string | null;
+  base_period: string;
+  days: number;
+  series: BacktestPoint[];
+  metrics: {
+    mae: number;
+    rmse: number;
+    correlation: number | null;
+    mape_pct: number;
+    max_abs_deviation_pct: number;
+  };
+  notes: string[];
+}
+
+export interface ReportRow {
+  period: string;
+  average_fare: number | null;
+  index_value: number | null;
+  observations: number;
+  valid_observations: number;
+  quality_pct: number;
+}
+
+export interface Report {
+  summary: {
+    route_id: string | null;
+    frequency: Frequency;
+    date_from: string | null;
+    date_to: string | null;
+    average_fare: number | null;
+    index_start: number | null;
+    index_end: number | null;
+    index_change_pct: number | null;
+    observations: number;
+    valid_observations: number;
+    quality_pct: number | null;
+    period_count: number;
+  };
+  rows: ReportRow[];
+}
+
 export interface Methodology {
   methodology_version: string;
   base_period: string;

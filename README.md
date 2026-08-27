@@ -160,8 +160,13 @@ Sources page shows Amadeus as *Not configured*.
 
 ```bash
 cd backend
-pytest                       # unit + API tests (uses an in-memory Mongo, no services needed)
+pip install -r requirements-dev.txt   # adds pytest + in-memory Mongo
+pytest                                # 49 tests — unit + API, no external services
 ```
+
+Coverage: index formula (standalone), weights & missing-route renormalization,
+normalizer, cleaner (dedupe / missing / outlier), synthetic reproducibility,
+every REST endpoint, and the back-test (pipeline recovers the reference signal).
 
 ---
 
@@ -191,16 +196,44 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/collection/status` | Last collection run |
 | POST | `/api/collection/run?mode=auto\|amadeus\|synthetic` | Trigger a collection + reindex |
 | GET | `/api/methodology` | Base period, basket, weights, formula, rules, disclaimer |
+| GET | `/api/backtest` | 30-day validation: our index vs reference, MAE/RMSE/correlation |
+| GET | `/api/reports?date_from=&date_to=&route_id=&frequency=` | Summary + per-period rows |
 
 ---
 
 ## Deployment
 
-| Component | Platform      | Notes                                                             |
-| --------- | ------------- | ---------------------------------------------------------------- |
-| Frontend  | Vercel        | Root `frontend/`, build `npm run build`, output `dist`. Set `VITE_API_BASE_URL` to the Render URL + `/api`. |
-| Backend   | Render        | Root `backend/`, start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Set all `backend/.env` vars, and `CORS_ORIGINS` to the Vercel URL. |
-| Database  | MongoDB Atlas | Allow the Render egress IPs (or `0.0.0.0/0` for the prototype).  |
+```
+User browser ─► Vercel (React) ─► Render (FastAPI) ─► MongoDB Atlas
+                                       └─► Amadeus API
+```
+
+### 1. Database — MongoDB Atlas
+Free M0 cluster, a DB user, and *Network Access* → `0.0.0.0/0` (Render's egress IPs
+are dynamic on the free plan). Copy the SRV URI.
+
+### 2. Backend — Render
+`backend/render.yaml` is a Blueprint: **New + → Blueprint**, point at this repo.
+Or create a **Web Service** manually:
+- Root directory `backend`, runtime Python 3.12 (`runtime.txt`)
+- Build `pip install -r requirements.txt` · Start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Health check path `/api/health`
+- Env vars: `MONGODB_URI`, `DATABASE_NAME`, `JWT_SECRET`, `DEMO_USER_PASSWORD`,
+  `AMADEUS_CLIENT_ID/SECRET` (optional), and **`CORS_ORIGINS`** = your Vercel URL
+  (e.g. `https://airindex.vercel.app`)
+
+After first deploy, seed once from the Render Shell:
+`python -m app.scripts.seed_database`
+
+### 3. Frontend — Vercel
+Import the repo, set **Root Directory** to `frontend` (`vercel.json` handles the
+Vite build + SPA rewrites). Add one env var: `VITE_API_BASE_URL` =
+`https://<your-render-app>.onrender.com/api`.
+
+### Local demo fallback
+If deployment is unavailable, the whole product runs locally from the seed data
+with no Amadeus key and (via the offline-login fallback) even without MongoDB for
+the login screen.
 
 ---
 
@@ -242,4 +275,4 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | B          | Amadeus adapter, normalization, cleaning, index engine, seed data | ✅ |
 | C          | Full REST API (21 endpoints) wired to the index engine     | ✅    |
 | D          | Dashboard, Price Index, Route, Lead-time, Data Quality, Airfare Data, Methodology, Data Sources UI | ✅ |
-| E          | 30-day back-test, Reports/CSV, deployment                  | ⏳    |
+| E          | 30-day validation, Reports + CSV, APScheduler, Vercel/Render configs | ✅ |

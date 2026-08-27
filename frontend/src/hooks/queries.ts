@@ -5,6 +5,7 @@ import { fetchCurrentIndex, fetchIndexHistory, fetchOverview } from "@/api/index
 import { fetchMethodology } from "@/api/methodology";
 import { fetchDataQuality, fetchCollectionStatus, runCollection } from "@/api/quality";
 import { fetchRouteDetail, fetchRoutes } from "@/api/routes";
+import { fetchBacktest, fetchReport, type ReportQuery } from "@/api/validation";
 import type { Frequency } from "@/types/models";
 
 export const useOverview = () =>
@@ -64,6 +65,17 @@ export const useMethodology = () =>
     queryKey: ["methodology"],
     queryFn: fetchMethodology,
     staleTime: 10 * 60_000,
+  });
+
+export const useBacktest = () =>
+  useQuery({ queryKey: ["backtest"], queryFn: fetchBacktest });
+
+export const useReport = (query: ReportQuery, enabled = true) =>
+  useQuery({
+    queryKey: ["report", query],
+    queryFn: () => fetchReport(query),
+    enabled,
+    placeholderData: keepPreviousData,
   });
 
 export const useRunCollection = () => {

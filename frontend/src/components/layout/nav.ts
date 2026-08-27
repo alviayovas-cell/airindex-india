@@ -8,6 +8,7 @@ import {
   Plug,
   FileBarChart,
   BookOpenText,
+  GitCompareArrows,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Route Analysis", to: "/routes", icon: Route },
   { label: "Price Index", to: "/index", icon: LineChart },
   { label: "Lead-time Analysis", to: "/lead-time", icon: CalendarClock },
+  { label: "Validation", to: "/validation", icon: GitCompareArrows },
   { label: "Data Quality", to: "/data-quality", icon: ShieldCheck },
   { label: "Data Sources", to: "/sources", icon: Plug },
   { label: "Reports", to: "/reports", icon: FileBarChart },
