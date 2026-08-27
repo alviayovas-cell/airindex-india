@@ -1,0 +1,15 @@
+# Local MongoDB for development when a MongoDB Atlas cluster is not available.
+#   docker compose up -d
+# Then set backend/.env -> MONGODB_URI=mongodb://localhost:27017
+services:
+  mongo:
+    image: mongo:7
+    container_name: airindex-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - airindex_mongo_data:/data/db
+
+volumes:
+  airindex_mongo_data:

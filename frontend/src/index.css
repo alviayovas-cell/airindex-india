@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   AIRINDEX design tokens  (channels as "R G B" for <alpha-value>)
+   ============================================================ */
+:root {
+  --background: 248 249 251; /* #f8f9fb near-white */
+  --foreground: 15 18 25; /* near-black */
+  --card: 255 255 255;
+  --card-foreground: 15 18 25;
+  --muted: 241 243 247;
+  --muted-foreground: 100 108 124;
+  --border: 229 232 238;
+  --input: 229 232 238;
+  --ring: 79 70 229; /* indigo-600 */
+
+  --primary: 17 20 28; /* near-black primary actions */
+  --primary-foreground: 255 255 255;
+  --accent: 79 70 229; /* indigo-600 */
+  --accent-foreground: 255 255 255;
+
+  --success: 22 163 74; /* green-600 */
+  --success-foreground: 255 255 255;
+  --warning: 217 119 6; /* amber-600 */
+  --warning-foreground: 255 255 255;
+  --danger: 220 38 38; /* red-600 */
+  --danger-foreground: 255 255 255;
+
+  --chart-1: 79 70 229; /* indigo */
+  --chart-2: 14 165 233; /* sky */
+  --chart-3: 22 163 74; /* green */
+  --chart-4: 217 119 6; /* amber */
+  --chart-5: 219 39 119; /* pink */
+  --chart-grid: 226 232 240;
+}
+
+.dark {
+  --background: 12 14 20; /* deep slate */
+  --foreground: 233 236 242;
+  --card: 21 24 33;
+  --card-foreground: 233 236 242;
+  --muted: 30 34 45;
+  --muted-foreground: 148 156 171;
+  --border: 38 43 56;
+  --input: 44 50 64;
+  --ring: 129 122 255;
+
+  --primary: 237 239 244; /* light primary in dark mode */
+  --primary-foreground: 17 20 28;
+  --accent: 129 122 255; /* lighter indigo for contrast */
+  --accent-foreground: 12 14 20;
+
+  --success: 34 197 94;
+  --success-foreground: 8 20 12;
+  --warning: 245 158 11;
+  --warning-foreground: 26 16 3;
+  --danger: 248 113 113;
+  --danger-foreground: 26 6 6;
+
+  --chart-1: 129 122 255;
+  --chart-2: 56 189 248;
+  --chart-3: 52 211 153;
+  --chart-4: 251 191 36;
+  --chart-5: 244 114 182;
+  --chart-grid: 44 50 64;
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Subtle, consistent focus ring */
+:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Thin scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 9999px;
+  border: 2px solid rgb(var(--background));
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
