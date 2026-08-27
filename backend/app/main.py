@@ -13,7 +13,19 @@ from pymongo.errors import PyMongoError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__
-from app.api import auth, meta
+from app.api import (
+    airlines,
+    analytics,
+    auth,
+    collection,
+    data_quality,
+    flights,
+    index,
+    meta,
+    methodology,
+    overview,
+    routes,
+)
 from app.config import settings
 from app.core.errors import AppError
 from app.database.connection import Database, ensure_indexes
@@ -94,8 +106,20 @@ async def _unhandled_handler(_: Request, exc: Exception) -> JSONResponse:
 
 
 # ---- Routes ----
-app.include_router(meta.router, prefix=settings.api_prefix)
-app.include_router(auth.router, prefix=settings.api_prefix)
+for module in (
+    meta,
+    auth,
+    overview,
+    index,
+    routes,
+    airlines,
+    flights,
+    analytics,
+    data_quality,
+    collection,
+    methodology,
+):
+    app.include_router(module.router, prefix=settings.api_prefix)
 
 
 @app.get("/")

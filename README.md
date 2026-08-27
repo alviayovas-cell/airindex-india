@@ -165,6 +165,35 @@ pytest                       # unit + API tests (uses an in-memory Mongo, no ser
 
 ---
 
+## API
+
+All responses use the envelope `{ "success": bool, "data": <payload|null>, "message": str }`.
+Every endpoint except `/api/health` and `/api/auth/login` requires
+`Authorization: Bearer <token>`. Full interactive docs at `/docs`.
+
+| Method | Endpoint | Purpose |
+| ------ | -------- | ------- |
+| POST | `/api/auth/login` | Obtain a JWT (`{email, password, remember_me}`) |
+| GET | `/api/health` | Service + DB + Amadeus status |
+| GET | `/api/overview` | Dashboard KPI bundle (index, counts, quality, last run) |
+| GET | `/api/index/current` | Latest index, 1d/7d/30d change, 30-point sparkline |
+| GET | `/api/index/history?frequency=` | Full series — `daily` \| `weekly` \| `monthly` |
+| GET | `/api/index/{daily,weekly,monthly}` | Series shortcuts |
+| GET | `/api/routes` | Route basket with per-route index, fare, change, sparkline |
+| GET | `/api/routes/{route_id}` | One route: index history, lead-time curve, airline breakdown |
+| GET | `/api/airlines` | Airlines with observation counts and average fare |
+| GET | `/api/flights` | Observation explorer — filter / sort / paginate + filter options |
+| GET | `/api/flights/search?route_id=&advance_days=` | Ad-hoc live lookup (not stored) |
+| GET | `/api/analytics/lead-time?route=` | Avg / median / count by T+1…T+45 |
+| GET | `/api/analytics/routes` | Route heatmap (route-level % change) |
+| GET | `/api/analytics/airlines` | Airline fare comparison |
+| GET | `/api/data-quality` | Totals, per-day breakdown, per-source health |
+| GET | `/api/collection/status` | Last collection run |
+| POST | `/api/collection/run?mode=auto\|amadeus\|synthetic` | Trigger a collection + reindex |
+| GET | `/api/methodology` | Base period, basket, weights, formula, rules, disclaimer |
+
+---
+
 ## Deployment
 
 | Component | Platform      | Notes                                                             |
@@ -211,6 +240,6 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | ---------- | ----------------------------------------------------------- | ----- |
 | A          | Shell, design system, auth (JWT), MongoDB connection        | ✅    |
 | B          | Amadeus adapter, normalization, cleaning, index engine, seed data | ✅ |
-| C          | Full REST API + Methodology page                           | ⏳    |
+| C          | Full REST API (21 endpoints) wired to the index engine     | ✅    |
 | D          | Dashboard, Route, Lead-time, Data Quality, Airfare Data UI | ⏳    |
 | E          | 30-day back-test, Reports/CSV, tests, deployment            | ⏳    |
