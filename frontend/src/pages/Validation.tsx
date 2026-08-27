@@ -137,17 +137,55 @@ export default function Validation() {
               </CardBody>
             </Card>
 
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader title="How to read this" />
+                <CardBody className="pt-0">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {d.notes.map((n) => (
+                      <li key={n} className="flex gap-2">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent" />
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="Limitations" />
+                <CardBody className="pt-0">
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {d.limitations.map((n) => (
+                      <li key={n} className="flex gap-2">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-warning" />
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+            </div>
+
             <Card>
-              <CardHeader title="How to read this" />
+              <CardHeader
+                title="External reference comparison"
+                description={d.reference_dataset.name}
+              />
               <CardBody className="pt-0">
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  {d.notes.map((n) => (
-                    <li key={n} className="flex gap-2">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-accent" />
-                      {n}
-                    </li>
-                  ))}
-                </ul>
+                {d.reference_dataset.available ? (
+                  <p className="text-sm text-muted-foreground">
+                    Reference dataset loaded.
+                  </p>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      <strong className="text-foreground">Validation dataset not yet available.</strong>{" "}
+                      {d.reference_dataset.reason}
+                    </span>
+                  </div>
+                )}
               </CardBody>
             </Card>
           </>

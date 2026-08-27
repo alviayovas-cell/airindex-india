@@ -209,12 +209,43 @@ export interface SourceHealth {
   is_synthetic: boolean;
 }
 
+export interface QualityGroupRow {
+  key: string;
+  label?: string;
+  total: number;
+  valid: number;
+  missing: number;
+  outlier: number;
+  duplicate: number;
+  cancelled: number;
+  sold_out: number;
+  quality_pct: number;
+}
+
 export interface DataQuality {
   overall_quality_pct: number | null;
   breakdown: DataQualityBreakdown;
   latest_day: DataQualityDay | null;
   daily: DataQualityDay[];
+  by_route: QualityGroupRow[];
+  by_airline: QualityGroupRow[];
   sources: SourceHealth[];
+  filters: {
+    date_from: string | null;
+    date_to: string | null;
+    route_id: string | null;
+    airline: string | null;
+    source: string | null;
+  };
+  filter_options: { routes: string[]; airlines: string[]; sources: string[] };
+}
+
+export interface DataQualityQuery {
+  date_from?: string;
+  date_to?: string;
+  route_id?: string;
+  airline?: string;
+  source?: string;
 }
 
 export interface CollectionRun {
@@ -256,6 +287,8 @@ export interface Backtest {
     max_abs_deviation_pct: number;
   };
   notes: string[];
+  limitations: string[];
+  reference_dataset: { available: boolean; name: string; reason: string };
 }
 
 export interface ReportRow {
@@ -283,6 +316,57 @@ export interface Report {
     period_count: number;
   };
   rows: ReportRow[];
+  generated_at?: string;
+  frequency?: Frequency;
+  disclaimer?: string;
+  index?: {
+    value: number;
+    base_period: string;
+    current_period: string;
+    change_1d: number | null;
+    change_7d: number | null;
+    change_30d: number | null;
+  } | null;
+  route_indexes?: {
+    route_id: string;
+    label: string;
+    current_index: number | null;
+    change_7d: number | null;
+    change_30d: number | null;
+    average_fare: number | null;
+    weight: number;
+  }[];
+  observed_contributors?: ObservedContributor[];
+  largest_observed_movement?: {
+    route_id: string;
+    label: string;
+    route_index_change: number;
+  } | null;
+  most_affected_window?: { window: string; abs_change_pct: number } | null;
+  volatility?: RouteVolatility[];
+  fare_spikes?: {
+    summary: Record<string, number>;
+    window_days: number;
+    top: FareSpike[];
+  };
+  data_quality?: {
+    overall_quality_pct: number | null;
+    breakdown: DataQualityBreakdown;
+  };
+  lead_time?: LeadTimeWindow[];
+  methodology?: {
+    version: string;
+    base_period: string;
+    formula: string;
+    advance_windows: number[];
+    weights: Record<string, number>;
+    disclaimer: string;
+  };
+  data_source?: {
+    source: string | null;
+    is_synthetic: boolean;
+    last_updated: string | null;
+  };
 }
 
 export interface RouteVolatility {

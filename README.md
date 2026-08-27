@@ -205,7 +205,7 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/alerts/fare-spikes?window_days=&route_id=&airline=&severity=` | Fare increases vs the preceding period, classified against configurable thresholds |
 | GET | `/api/analytics/routes` | Route heatmap (route-level % change) |
 | GET | `/api/analytics/airlines` | Airline fare comparison |
-| GET | `/api/data-quality` | Totals, per-day breakdown, per-source health |
+| GET | `/api/data-quality?date_from=&date_to=&route_id=&airline=&source=` | Totals, per-day / per-route / per-airline breakdown, per-source health |
 | GET | `/api/collection/status` | Last collection run |
 | POST | `/api/collection/run?mode=auto\|amadeus\|synthetic` | Trigger a collection + reindex |
 | GET | `/api/methodology` | Base period, basket, weights, formula, rules, disclaimer |
@@ -214,8 +214,9 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/config` | Runtime index config: weights (raw + normalized), base period, outlier method |
 | PUT | `/api/config/weights` | Update route-basket weights (renormalized) and recompute the index |
 | PUT | `/api/config/index` | Update base period / methodology version / outlier method (`mad` \| `iqr`) |
-| GET | `/api/backtest` | 30-day validation: our index vs reference, MAE/RMSE/correlation |
-| GET | `/api/reports?date_from=&date_to=&route_id=&frequency=` | Summary + per-period rows |
+| GET | `/api/backtest` | 30-day validation: our index vs reference, MAE/RMSE/correlation, limitations, external-reference status |
+| GET | `/api/reports?date_from=&date_to=&route_id=&frequency=&format=` | Full government-style report; `format` = `json` \| `csv` \| `pdf` |
+| GET | `/api/reports/{daily,weekly,monthly}?format=` | Report shortcuts |
 
 ---
 
@@ -303,6 +304,6 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | G          | Index Calculation Explorer + "Why did AIRINDEX change?" observed contributors | ✅ |
 | H          | Route price volatility + fare-spike detection & alerts | ✅ |
 | I          | Interactive India route map + lead-time filters | ✅ |
-| J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ⬜ |
+| J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ✅ |
 | K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ⬜ |
 | L          | ML fare prediction, festival analysis, security/testing/UX/docs pass | ⬜ |

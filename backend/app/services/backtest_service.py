@@ -147,4 +147,23 @@ async def run_backtest(db: AsyncIOMotorDatabase) -> dict:
             "A small MAE/RMSE and high correlation indicate the pipeline recovers "
             "the underlying price signal.",
         ],
+        "limitations": [
+            "The reference series is the noise-free price signal implied by the "
+            "synthetic model, not an independent external index.",
+            "Route coverage is limited to the six-route prototype basket.",
+            "Sampling methodology, collection frequency and seat-availability "
+            "handling differ from any official airfare series.",
+            "The window is a fixed 30-day demonstration period.",
+        ],
+        "reference_dataset": {
+            "available": False,
+            "name": "DGCA / external airfare reference series",
+            "reason": (
+                "No external reference dataset (e.g. DGCA published fares, an NSO "
+                "transport CPI sub-index) has been loaded. A real-world comparison "
+                "will run here once such a dataset is available; the check above "
+                "validates the pipeline against the synthetic model's ground truth "
+                "only."
+            ),
+        },
     }

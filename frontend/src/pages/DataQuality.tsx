@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -10,6 +11,7 @@ import { CheckCircle2, Copy, HelpCircle, MinusCircle, XCircle } from "lucide-rea
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, CardHeader } from "@/components/common/Card";
 import { ProgressBar } from "@/components/common/ProgressBar";
+import { Select } from "@/components/common/Select";
 import { StatusIndicator } from "@/components/common/StatusIndicator";
 import { Badge } from "@/components/common/Badge";
 import { QueryBoundary } from "@/components/common/QueryBoundary";
@@ -18,7 +20,7 @@ import { ChartTooltip } from "@/components/charts/ChartTooltip";
 import { useChartTheme } from "@/lib/chartTheme";
 import { useDataQuality } from "@/hooks/queries";
 import { formatDate, formatDateShort, formatNumber, formatTime } from "@/utils/format";
-import type { DataQualityBreakdown } from "@/types/models";
+import type { DataQualityBreakdown, QualityGroupRow } from "@/types/models";
 
 const CATS: {
   key: keyof DataQualityBreakdown;
@@ -35,8 +37,24 @@ const CATS: {
 ];
 
 export default function DataQuality() {
-  const quality = useDataQuality();
+  const [filters, setFilters] = useState({
+    route_id: "",
+    airline: "",
+    source: "",
+    date_from: "",
+    date_to: "",
+  });
+  const quality = useDataQuality({
+    route_id: filters.route_id || undefined,
+    airline: filters.airline || undefined,
+    source: filters.source || undefined,
+    date_from: filters.date_from || undefined,
+    date_to: filters.date_to || undefined,
+  });
   const theme = useChartTheme();
+  const opts = quality.data?.filter_options;
+  const set = (k: keyof typeof filters) => (e: { target: { value: string } }) =>
+    setFilters((f) => ({ ...f, [k]: e.target.value }));
 
   return (
     <div className="space-y-6">
@@ -44,6 +62,57 @@ export default function DataQuality() {
         title="Data Quality"
         description="How complete and reliable the collected airfare observations are."
       />
+
+      <Card>
+        <CardHeader title="Filters" description="Slice the cleaning-pipeline outcome." />
+        <CardBody className="grid gap-3 pt-0 sm:grid-cols-2 lg:grid-cols-5">
+          <Select
+            label="Route"
+            value={filters.route_id}
+            onChange={set("route_id")}
+            options={[
+              { value: "", label: "All routes" },
+              ...(opts?.routes.map((r) => ({ value: r, label: r })) ?? []),
+            ]}
+          />
+          <Select
+            label="Airline"
+            value={filters.airline}
+            onChange={set("airline")}
+            options={[
+              { value: "", label: "All airlines" },
+              ...(opts?.airlines.map((a) => ({ value: a, label: a })) ?? []),
+            ]}
+          />
+          <Select
+            label="Source"
+            value={filters.source}
+            onChange={set("source")}
+            options={[
+              { value: "", label: "All sources" },
+              ...(opts?.sources.map((s) => ({ value: s, label: s })) ?? []),
+            ]}
+          />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">From</label>
+            <input
+              type="date"
+              value={filters.date_from}
+              onChange={set("date_from")}
+              className="h-9 w-full rounded-lg border border-input bg-card px-3 text-sm focus:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-muted-foreground">To</label>
+            <input
+              type="date"
+              value={filters.date_to}
+              onChange={set("date_to")}
+              className="h-9 w-full rounded-lg border border-input bg-card px-3 text-sm focus:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            />
+          </div>
+        </CardBody>
+      </Card>
 
       <QueryBoundary
         query={quality}
@@ -53,6 +122,12 @@ export default function DataQuality() {
             <CardSkeleton />
             <CardSkeleton />
           </div>
+        }
+        isEmpty={(d) => d.breakdown.total === 0}
+        emptyState={
+          <Card className="p-10 text-center text-sm text-muted-foreground">
+            No observations match these filters.
+          </Card>
         }
       >
         {(d) => {
@@ -225,10 +300,75 @@ export default function DataQuality() {
                   ))}
                 </CardBody>
               </Card>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <QualityGroupTable title="Quality by route" rows={d.by_route} />
+                <QualityGroupTable title="Quality by airline" rows={d.by_airline} />
+              </div>
             </>
           );
         }}
       </QueryBoundary>
     </div>
+  );
+}
+
+function QualityGroupTable({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: QualityGroupRow[];
+}) {
+  return (
+    <Card>
+      <CardHeader title={title} description="Valid share and issue counts" />
+      <CardBody className="pt-0">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="py-2 pr-4 text-left font-semibold">
+                  {title.includes("route") ? "Route" : "Airline"}
+                </th>
+                <th className="px-3 text-right font-semibold">Total</th>
+                <th className="px-3 text-right font-semibold">Outliers</th>
+                <th className="px-3 text-right font-semibold">Missing</th>
+                <th className="pl-3 text-right font-semibold">Quality</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-b border-border last:border-0">
+                  <td className="py-2 pr-4 font-medium">{r.label ?? r.key}</td>
+                  <td className="px-3 text-right tabular-nums text-muted-foreground">
+                    {formatNumber(r.total)}
+                  </td>
+                  <td className="px-3 text-right tabular-nums text-muted-foreground">
+                    {formatNumber(r.outlier)}
+                  </td>
+                  <td className="px-3 text-right tabular-nums text-muted-foreground">
+                    {formatNumber(r.missing)}
+                  </td>
+                  <td className="pl-3 text-right">
+                    <span
+                      className={
+                        r.quality_pct >= 90
+                          ? "font-semibold text-success"
+                          : r.quality_pct >= 75
+                            ? "font-semibold text-warning"
+                            : "font-semibold text-danger"
+                      }
+                    >
+                      {r.quality_pct}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardBody>
+    </Card>
   );
 }

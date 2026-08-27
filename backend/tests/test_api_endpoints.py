@@ -102,6 +102,22 @@ def test_data_quality(api):
     assert 0 <= d["overall_quality_pct"] <= 100
     assert d["breakdown"]["total"] > 0
     assert d["sources"] and d["sources"][0]["name"] == "synthetic"
+    assert len(d["by_route"]) == 6
+    assert d["by_airline"]
+    assert d["filter_options"]["routes"]
+
+
+def test_data_quality_filters(api):
+    full = _data(api.get("/api/data-quality"))
+    one = _data(api.get("/api/data-quality?route_id=DEL-BOM"))
+    assert one["breakdown"]["total"] < full["breakdown"]["total"]
+    assert len(one["by_route"]) == 1
+    assert one["by_route"][0]["key"] == "DEL-BOM"
+    assert one["filters"]["route_id"] == "DEL-BOM"
+
+    empty = _data(api.get("/api/data-quality?date_from=2099-01-01"))
+    assert empty["breakdown"]["total"] == 0
+    assert empty["overall_quality_pct"] is None
 
 
 def test_methodology(api):

@@ -320,6 +320,29 @@ class AirfareQuoteRepository:
         rows.sort(key=lambda r: r["date"])
         return rows
 
+    async def status_counts(
+        self, filters: dict, *, by: str | None = None
+    ) -> list[tuple[str, str, int]]:
+        """Observation counts grouped by status (and optionally by a second field
+        such as ``collection_date``, ``route_id`` or ``airline``).
+
+        Returns ``[(bucket_key, status, n)]`` — ``bucket_key`` is ``"_all_"`` when
+        ``by`` is None. Honours the same filter shape as ``query()``.
+        """
+        match = self._build_filter(filters)
+        group_id: dict = {"status": "$status"}
+        if by:
+            group_id["k"] = f"${by}"
+        pipeline: list[dict] = []
+        if match:
+            pipeline.append({"$match": match})
+        pipeline.append({"$group": {"_id": group_id, "n": {"$sum": 1}}})
+        out: list[tuple[str, str, int]] = []
+        async for doc in self.col.aggregate(pipeline):
+            gid = doc["_id"]
+            out.append((gid.get("k", "_all_"), gid["status"], doc["n"]))
+        return out
+
     async def route_window_avg_fare(self, dates: list[str]) -> dict:
         """{collection_date: {route_id: {"avg": mean-of-window-means,
         "windows": {advance_window: avg_fare}}}} for VALID rows on the given dates."""

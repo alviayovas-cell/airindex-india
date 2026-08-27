@@ -53,6 +53,9 @@ def test_backtest_endpoint(api):
     assert d["available"] is True
     assert "metrics" in d and "series" in d
     assert "not real observations" in d["data_status_label"]
+    assert d["limitations"]
+    assert d["reference_dataset"]["available"] is False
+    assert "DGCA" in d["reference_dataset"]["name"]
 
 
 def test_report_endpoint_daily(api):
@@ -68,3 +71,32 @@ def test_report_endpoint_weekly_and_route_filter(api):
     assert d["summary"]["frequency"] == "weekly"
     for row in d["rows"]:
         assert row["observations"] > 0
+
+
+def test_report_full_sections_and_shortcut(api):
+    d = _data(api.get("/api/reports/weekly"))
+    for key in (
+        "index", "route_indexes", "observed_contributors", "volatility",
+        "fare_spikes", "data_quality", "lead_time", "methodology",
+        "data_source", "generated_at", "disclaimer",
+    ):
+        assert key in d, key
+    assert d["frequency"] == "weekly"
+    assert len(d["route_indexes"]) == 6
+    assert "not an official CPI statistic" in d["disclaimer"]
+    assert d["methodology"]["formula"].startswith("I(t)")
+
+
+def test_report_csv_and_pdf_formats(api):
+    csv = api.get("/api/reports?frequency=daily&format=csv")
+    assert csv.status_code == 200
+    assert csv.headers["content-type"].startswith("text/csv")
+    assert csv.text.splitlines()[0].startswith("period,average_fare")
+
+    pdf = api.get("/api/reports/monthly?format=pdf")
+    assert pdf.status_code == 200
+    assert pdf.headers["content-type"] == "application/pdf"
+    assert pdf.content[:4] == b"%PDF"
+
+    bad = api.get("/api/reports?format=xml")
+    assert bad.status_code == 400

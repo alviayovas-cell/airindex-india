@@ -1,10 +1,17 @@
 import { http, request } from "./client";
 import type { ApiResponse } from "@/types/api";
-import type { CollectionRun, DataQuality } from "@/types/models";
+import type { CollectionRun, DataQuality, DataQualityQuery } from "@/types/models";
 
-export function fetchDataQuality(): Promise<DataQuality> {
+export function fetchDataQuality(
+  query: DataQualityQuery = {},
+): Promise<DataQuality> {
+  const params = Object.fromEntries(
+    Object.entries(query).filter(([, v]) => v),
+  );
   return request<DataQuality>(
-    http.get<ApiResponse<DataQuality>>("/data-quality"),
+    http.get<ApiResponse<DataQuality>>("/data-quality", {
+      params: Object.keys(params).length ? params : undefined,
+    }),
   );
 }
 

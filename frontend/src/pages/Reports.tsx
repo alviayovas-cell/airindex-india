@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, FileBarChart } from "lucide-react";
+import { FileBarChart, FileDown, FileJson, FileText } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, CardHeader } from "@/components/common/Card";
 import { Button } from "@/components/common/Button";
@@ -9,9 +9,9 @@ import { QueryBoundary } from "@/components/common/QueryBoundary";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ChangeIndicator } from "@/components/common/ChangeIndicator";
 import { useReport, useRoutes } from "@/hooks/queries";
-import { downloadCsv } from "@/utils/csv";
-import { formatCurrency, formatDate, formatIndex, formatNumber } from "@/utils/format";
-import type { Frequency, Report } from "@/types/models";
+import { downloadReportFile, type ReportQuery } from "@/api/validation";
+import { formatCurrency, formatDate, formatIndex, formatNumber, formatPercent } from "@/utils/format";
+import type { Frequency } from "@/types/models";
 
 export default function Reports() {
   const routes = useRoutes();
@@ -23,29 +23,22 @@ export default function Reports() {
   });
   const [submitted, setSubmitted] = useState<typeof form | null>(null);
 
-  const report = useReport(
-    {
-      date_from: submitted?.date_from || undefined,
-      date_to: submitted?.date_to || undefined,
-      route_id: submitted?.route_id || undefined,
-      frequency: submitted?.frequency,
-    },
-    !!submitted,
-  );
+  const query: ReportQuery = {
+    date_from: submitted?.date_from || undefined,
+    date_to: submitted?.date_to || undefined,
+    route_id: submitted?.route_id || undefined,
+    frequency: submitted?.frequency,
+  };
+  const report = useReport(query, !!submitted);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
-  function exportCsv(d: Report) {
-    downloadCsv(
-      `airindex-report-${new Date().toISOString().slice(0, 10)}.csv`,
-      [
-        { key: "period", header: "period" },
-        { key: "average_fare", header: "average_fare" },
-        { key: "index_value", header: "index_value" },
-        { key: "observations", header: "observations" },
-        { key: "valid_observations", header: "valid_observations" },
-        { key: "quality_pct", header: "quality_pct" },
-      ],
-      d.rows as unknown as Record<string, unknown>[],
-    );
+  async function download(format: "csv" | "pdf" | "json") {
+    setDownloading(format);
+    try {
+      await downloadReportFile(query, format);
+    } finally {
+      setDownloading(null);
+    }
   }
 
   return (
@@ -152,10 +145,17 @@ export default function Reports() {
                   title="Report preview"
                   description={`${d.summary.period_count} ${d.summary.frequency} periods${d.summary.route_id ? ` · ${d.summary.route_id}` : ""}`}
                   action={
-                    <Button variant="secondary" size="sm" onClick={() => exportCsv(d)}>
-                      <Download className="h-3.5 w-3.5" />
-                      Export CSV
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="secondary" size="sm" loading={downloading === "pdf"} onClick={() => download("pdf")}>
+                        <FileText className="h-3.5 w-3.5" /> PDF
+                      </Button>
+                      <Button variant="secondary" size="sm" loading={downloading === "csv"} onClick={() => download("csv")}>
+                        <FileDown className="h-3.5 w-3.5" /> CSV
+                      </Button>
+                      <Button variant="secondary" size="sm" loading={downloading === "json"} onClick={() => download("json")}>
+                        <FileJson className="h-3.5 w-3.5" /> JSON
+                      </Button>
+                    </div>
                   }
                 />
                 <CardBody className="pt-0">
@@ -185,6 +185,139 @@ export default function Reports() {
                   </div>
                 </CardBody>
               </Card>
+
+              {d.route_indexes && d.route_indexes.length > 0 && (
+                <Card>
+                  <CardHeader title="Route-level indexes" description="Latest sub-index and change per basket route" />
+                  <CardBody className="pt-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[520px] text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
+                            <th className="py-2 pr-4 text-left font-semibold">Route</th>
+                            <th className="px-4 text-right font-semibold">Index</th>
+                            <th className="px-4 text-right font-semibold">7d</th>
+                            <th className="px-4 text-right font-semibold">30d</th>
+                            <th className="pl-4 text-right font-semibold">Avg fare</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {d.route_indexes.map((r) => (
+                            <tr key={r.route_id} className="border-b border-border last:border-0">
+                              <td className="py-2.5 pr-4 font-medium">{r.label}</td>
+                              <td className="px-4 text-right tabular-nums">{formatIndex(r.current_index)}</td>
+                              <td className="px-4 text-right"><ChangeIndicator value={r.change_7d} size="xs" /></td>
+                              <td className="px-4 text-right"><ChangeIndicator value={r.change_30d} size="xs" /></td>
+                              <td className="pl-4 text-right tabular-nums text-muted-foreground">{formatCurrency(r.average_fare)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+
+              {d.observed_contributors && d.observed_contributors.length > 0 && (
+                <Card>
+                  <CardHeader
+                    title="Observed contributors to the latest index change"
+                    description="Largest measured movements — not a causal explanation"
+                  />
+                  <CardBody className="pt-0">
+                    <div className="divide-y divide-border">
+                      {d.observed_contributors.map((c) => (
+                        <div key={c.route_id} className="flex items-center justify-between py-2 text-sm">
+                          <span className="font-medium">{c.label}</span>
+                          <span className="flex items-center gap-4">
+                            <span className="text-xs text-muted-foreground">
+                              route index {c.route_index_change > 0 ? "+" : ""}{c.route_index_change.toFixed(2)}
+                            </span>
+                            <ChangeIndicator value={c.avg_fare_change_pct} size="xs" />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                {d.volatility && d.volatility.length > 0 && (
+                  <Card>
+                    <CardHeader title="Route volatility" description="Experimental 0–100 score" />
+                    <CardBody className="pt-0">
+                      <div className="divide-y divide-border">
+                        {d.volatility.slice(0, 6).map((v) => (
+                          <div key={v.route_id} className="flex items-center justify-between py-2 text-sm">
+                            <span className="font-medium">{v.label}</span>
+                            <span className="text-muted-foreground">
+                              {v.volatility_score.toFixed(0)} · {v.category}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardBody>
+                  </Card>
+                )}
+
+                {d.fare_spikes && (
+                  <Card>
+                    <CardHeader
+                      title="Fare spikes"
+                      description={`Last ${d.fare_spikes.window_days} days vs the preceding period`}
+                    />
+                    <CardBody className="pt-0 text-sm">
+                      <p className="mb-3 text-muted-foreground">
+                        Moderate {d.fare_spikes.summary["Moderate Increase"] ?? 0} · High{" "}
+                        {d.fare_spikes.summary["High Increase"] ?? 0} · Critical{" "}
+                        {d.fare_spikes.summary["Critical Increase"] ?? 0}
+                      </p>
+                      {d.fare_spikes.top.length === 0 ? (
+                        <p className="text-muted-foreground">No fare spikes in this window.</p>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {d.fare_spikes.top.map((a, i) => (
+                            <div key={i} className="flex items-center justify-between py-2">
+                              <span>
+                                <span className="font-medium">{a.route_label}</span>{" "}
+                                <span className="text-xs text-muted-foreground">{a.advance_window}</span>
+                              </span>
+                              <span className="font-semibold text-danger">
+                                {formatPercent(a.pct_change)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardBody>
+                  </Card>
+                )}
+              </div>
+
+              {d.methodology && (
+                <Card>
+                  <CardHeader title="Methodology & disclaimer" />
+                  <CardBody className="space-y-2 pt-0 text-sm text-muted-foreground">
+                    <p>
+                      Version {d.methodology.version} · base period{" "}
+                      {formatDate(d.methodology.base_period)} · windows{" "}
+                      {d.methodology.advance_windows.map((w) => `T+${w}`).join(", ")}
+                    </p>
+                    <p className="font-mono text-xs text-foreground">{d.methodology.formula}</p>
+                    <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs">
+                      {d.disclaimer ?? d.methodology.disclaimer}
+                    </p>
+                    {d.data_source && (
+                      <p className="text-xs">
+                        Data source: {d.data_source.source}
+                        {d.data_source.is_synthetic ? " (synthetic demonstration data)" : ""} ·
+                        generated {d.generated_at ? formatDate(d.generated_at) : "—"}
+                      </p>
+                    )}
+                  </CardBody>
+                </Card>
+              )}
             </>
           )}
         </QueryBoundary>

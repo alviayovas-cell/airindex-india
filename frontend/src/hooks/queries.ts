@@ -19,6 +19,7 @@ import { fetchFlights, type FlightQuery } from "@/api/flights";
 import { fetchCurrentIndex, fetchIndexHistory, fetchOverview } from "@/api/index";
 import { fetchMethodology } from "@/api/methodology";
 import { fetchDataQuality, fetchCollectionStatus, runCollection } from "@/api/quality";
+import type { DataQualityQuery } from "@/types/models";
 import { fetchRouteDetail, fetchRoutes } from "@/api/routes";
 import { fetchBacktest, fetchReport, type ReportQuery } from "@/api/validation";
 import type { Frequency } from "@/types/models";
@@ -83,8 +84,12 @@ export const useFlights = (query: FlightQuery) =>
     placeholderData: keepPreviousData,
   });
 
-export const useDataQuality = () =>
-  useQuery({ queryKey: ["data-quality"], queryFn: fetchDataQuality });
+export const useDataQuality = (query: DataQualityQuery = {}) =>
+  useQuery({
+    queryKey: ["data-quality", query],
+    queryFn: () => fetchDataQuality(query),
+    placeholderData: keepPreviousData,
+  });
 
 export const useCollectionStatus = () =>
   useQuery({ queryKey: ["collection", "status"], queryFn: fetchCollectionStatus });
