@@ -46,6 +46,13 @@ export function formatDate(value: string | Date | null | undefined): string {
   });
 }
 
+export function formatDateShort(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+}
+
 export function formatTime(value: string | Date | null | undefined): string {
   if (!value) return "—";
   const d = typeof value === "string" ? new Date(value) : value;

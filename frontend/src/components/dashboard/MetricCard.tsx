@@ -53,18 +53,18 @@ export function MetricCard({
         </>
       ) : (
         <>
-          <p className="mt-2 text-[30px] font-bold leading-none tracking-tight text-foreground">
+          <p className="mt-2 truncate text-[28px] font-bold leading-none tracking-tight text-foreground">
             {value}
           </p>
-          <div className="mt-2.5 flex items-center gap-1.5 text-xs">
+          <div className="mt-2.5 text-xs">
             {change != null ? (
-              <>
-                <span className={cn("inline-flex items-center gap-0.5 font-medium", toneColor)}>
+              <span className="flex items-center gap-1.5">
+                <span className={cn("inline-flex items-center gap-0.5 font-semibold tabular-nums", toneColor)}>
                   <ToneIcon className="h-3.5 w-3.5" />
                   {formatPercent(change)}
                 </span>
-                <span className="text-muted-foreground">from previous period</span>
-              </>
+                {caption && <span className="text-muted-foreground">{caption}</span>}
+              </span>
             ) : (
               <span className="text-muted-foreground">{caption ?? "—"}</span>
             )}

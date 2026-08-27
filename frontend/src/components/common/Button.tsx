@@ -16,8 +16,7 @@ const variants: Record<Variant, string> = {
     "bg-primary text-primary-foreground hover:opacity-90 focus-visible:outline-primary",
   accent:
     "bg-accent text-accent-foreground hover:opacity-90 focus-visible:outline-accent",
-  secondary:
-    "bg-card text-foreground border border-border hover:bg-muted",
+  secondary: "bg-card text-foreground border border-border hover:bg-muted",
   ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
   danger: "bg-danger text-danger-foreground hover:opacity-90",
 };
@@ -28,6 +27,24 @@ const sizes: Record<Size, string> = {
   lg: "h-11 px-5 text-sm gap-2",
 };
 
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  className,
+}: {
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+} = {}): string {
+  return cn(
+    "inline-flex items-center justify-center rounded-lg font-medium transition-[background-color,opacity,box-shadow] duration-150",
+    "disabled:pointer-events-none disabled:opacity-50",
+    variants[variant],
+    sizes[size],
+    className,
+  );
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { className, variant = "primary", size = "md", loading, disabled, children, ...props },
   ref,
@@ -36,13 +53,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={cn(
-        "inline-flex items-center justify-center rounded-lg font-medium transition-[background-color,opacity,box-shadow] duration-150",
-        "disabled:pointer-events-none disabled:opacity-50",
-        variants[variant],
-        sizes[size],
-        className,
-      )}
+      className={buttonClasses({ variant, size, className })}
       {...props}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

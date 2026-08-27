@@ -241,5 +241,5 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | A          | Shell, design system, auth (JWT), MongoDB connection        | ✅    |
 | B          | Amadeus adapter, normalization, cleaning, index engine, seed data | ✅ |
 | C          | Full REST API (21 endpoints) wired to the index engine     | ✅    |
-| D          | Dashboard, Route, Lead-time, Data Quality, Airfare Data UI | ⏳    |
-| E          | 30-day back-test, Reports/CSV, tests, deployment            | ⏳    |
+| D          | Dashboard, Price Index, Route, Lead-time, Data Quality, Airfare Data, Methodology, Data Sources UI | ✅ |
+| E          | 30-day back-test, Reports/CSV, deployment                  | ⏳    |

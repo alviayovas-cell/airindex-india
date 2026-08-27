@@ -48,10 +48,12 @@ export function ChartSkeleton({ height = 280 }: { height?: number }) {
 
 export function TableRowSkeleton({ cols = 5 }: { cols?: number }) {
   return (
-    <div className="flex items-center gap-4 border-b border-border px-4 py-3.5 last:border-0">
+    <tr className="border-b border-border last:border-0">
       {Array.from({ length: cols }).map((_, i) => (
-        <Skeleton key={i} className={cn("h-3.5", i === 0 ? "w-32" : "flex-1")} />
+        <td key={i} className="px-4 py-3.5">
+          <Skeleton className={cn("h-3.5", i === 0 ? "w-28" : "w-full")} />
+        </td>
       ))}
-    </div>
+    </tr>
   );
 }
