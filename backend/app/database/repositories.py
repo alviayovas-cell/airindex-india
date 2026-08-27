@@ -337,6 +337,7 @@ class AirfareQuoteRepository:
                 "travel_date": 1,
                 "collection_date": 1,
                 "total_fare": 1,
+                "source": 1,
             },
         )
         return [doc async for doc in cursor]

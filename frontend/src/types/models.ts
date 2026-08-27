@@ -491,15 +491,21 @@ export interface ModelMetrics {
 export interface ModelInfo {
   available: boolean;
   reason?: string;
+  min_observations?: number;
   version?: string;
   trained_at?: string;
   algorithm?: string;
+  algorithm_label?: string;
   metrics?: ModelMetrics;
   n_train?: number;
   n_test?: number;
+  n_observations?: number;
+  training_period?: { from: string; to: string } | null;
   data_basis?: string;
+  data_sources?: Record<string, number>;
   features?: string[];
-  disclaimer?: string;
+  basis_label?: string;
+  note?: string;
 }
 
 export interface FarePrediction {
@@ -516,9 +522,13 @@ export interface FarePrediction {
   predicted_upper_inr?: number;
   interval?: string;
   model_version?: string;
+  model_label?: string;
   model_metrics?: ModelMetrics;
+  training_observations?: number;
+  training_period?: { from: string; to: string } | null;
+  trained_at?: string;
   data_basis?: string;
-  disclaimer?: string;
+  note?: string;
 }
 
 export interface FestivalEvent {

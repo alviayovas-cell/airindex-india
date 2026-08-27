@@ -35,7 +35,8 @@ def test_prediction_unavailable_without_model(api, tmp_path, monkeypatch):
     predict_mod.reload_model()
     d = _data(api.get("/api/predictions/status"))
     assert d["available"] is False
-    assert "train" in d["reason"].lower()
+    assert d["min_observations"] > 0
+    assert "sufficient historical observations" in d["reason"].lower()
 
     fd = _data(api.get("/api/predictions/fare?route_id=DEL-BOM&advance_days=15"))
     assert fd["available"] is False
@@ -54,7 +55,10 @@ async def test_train_then_predict_range(seeded_db, tmp_path, monkeypatch):
 
     info = predict_mod.model_info()
     assert info["available"] is True
-    assert info["data_basis"] == "synthetic-demonstration"
+    # provenance is derived from the observations' `source`, not hard-coded
+    assert info["data_basis"] in {"demonstration", "authorized-api"}
+    assert info["data_sources"]  # non-empty source breakdown
+    assert info["training_period"]["from"] <= info["training_period"]["to"]
 
     p = predict_mod.predict_fare_range(
         route_id="DEL-BOM", airline="6E", advance_days=15, fare_type="standard"
@@ -62,7 +66,8 @@ async def test_train_then_predict_range(seeded_db, tmp_path, monkeypatch):
     assert p["available"] is True
     assert p["predicted_lower_inr"] <= p["predicted_point_inr"] <= p["predicted_upper_inr"]
     assert p["prediction_horizon_days"] == 15
-    assert "not used in the AIRINDEX" in p["disclaimer"]
+    assert p["training_observations"] > 0
+    assert "not used in the AIRINDEX" in p["note"]
 
     unknown = predict_mod.predict_fare_range(
         route_id="ZZZ-YYY", airline="6E", advance_days=10

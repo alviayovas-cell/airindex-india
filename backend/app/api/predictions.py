@@ -1,7 +1,9 @@
 """Fare-range prediction endpoint (spec §Part 14).
 
-Predictions are illustrative (trained on synthetic demonstration data) and are
-never used in the AIRINDEX calculation.
+The model is trained on the AIRINDEX airfare observation history in the database
+(through the same cleaning pipeline as the index). A prediction is a fare *range*,
+not a guaranteed fare, and is never used in the AIRINDEX calculation. When there
+are too few observations the endpoint returns ``available: false`` with a reason.
 """
 
 from __future__ import annotations

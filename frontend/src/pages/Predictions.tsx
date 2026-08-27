@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { AlertTriangle, Brain, TrendingUp } from "lucide-react";
+import { Brain, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, CardHeader } from "@/components/common/Card";
-import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
 import { Select } from "@/components/common/Select";
 import { QueryBoundary } from "@/components/common/QueryBoundary";
 import { CardSkeleton } from "@/components/common/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { useFarePrediction, useModelInfo, useRoutes } from "@/hooks/queries";
-import { formatCurrency, formatDate } from "@/utils/format";
+import { formatCurrency, formatDate, formatNumber } from "@/utils/format";
 
 const AIRLINES = ["6E", "AI", "UK", "SG", "QP"];
 const FARE_TYPES = ["standard", "saver", "flexi"];
@@ -34,15 +33,6 @@ export default function Predictions() {
         description="A machine-learning estimate of the likely fare range for a future trip."
       />
 
-      <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          <strong>Trained on synthetic demonstration data.</strong> Predictions are
-          illustrative only — not purchasing advice — and are never used in the
-          AIRINDEX calculation.
-        </span>
-      </div>
-
       <QueryBoundary
         query={model}
         skeleton={<CardSkeleton />}
@@ -50,8 +40,11 @@ export default function Predictions() {
         emptyState={
           <EmptyState
             icon={Brain}
-            title="No model trained yet"
-            description="Run `python -m app.ml.train` once the database has enough valid observations."
+            title="Prediction unavailable"
+            description={
+              model.data?.reason ??
+              "Prediction unavailable until sufficient historical observations are collected."
+            }
           />
         }
       >
@@ -60,7 +53,7 @@ export default function Predictions() {
             <Card>
               <CardHeader
                 title="Predict a fare range"
-                description={`Model ${m.version} · ${m.algorithm}`}
+                description={m.basis_label}
               />
               <CardBody>
                 <form
@@ -118,51 +111,74 @@ export default function Predictions() {
                 }
               >
                 {(p) => (
-                  <div className="grid gap-6 lg:grid-cols-3">
-                    <Card className="p-6 lg:col-span-2">
-                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        <TrendingUp className="h-4 w-4" /> Predicted fare range · {p.interval}
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <span className="text-3xl font-bold tabular-nums">
-                          {formatCurrency(p.predicted_lower_inr)}
-                        </span>
-                        <span className="text-xl text-muted-foreground">–</span>
-                        <span className="text-3xl font-bold tabular-nums">
-                          {formatCurrency(p.predicted_upper_inr)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Central estimate {formatCurrency(p.predicted_point_inr)} · horizon{" "}
-                        {p.prediction_horizon_days} days · travel {formatDate(p.travel_date)}
-                      </p>
-                      <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
-                        {p.disclaimer}
-                      </p>
-                    </Card>
+                  <Card className="p-6">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <TrendingUp className="h-4 w-4" /> Predicted fare range · {p.interval}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-3xl font-bold tabular-nums">
+                        {formatCurrency(p.predicted_lower_inr)}
+                      </span>
+                      <span className="text-xl text-muted-foreground">–</span>
+                      <span className="text-3xl font-bold tabular-nums">
+                        {formatCurrency(p.predicted_upper_inr)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Central estimate {formatCurrency(p.predicted_point_inr)}
+                    </p>
 
-                    <Card className="p-6">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Model
-                      </p>
-                      <dl className="mt-3 space-y-1.5 text-sm">
-                        <Row label="Version" value={p.model_version ?? "—"} />
-                        <Row label="MAE" value={formatCurrency(m.metrics?.mae)} />
-                        <Row label="RMSE" value={formatCurrency(m.metrics?.rmse)} />
-                        <Row
-                          label="Interval coverage"
-                          value={`${m.metrics?.interval_coverage_pct ?? "—"}%`}
-                        />
-                        <Row label="Train / test rows" value={`${m.n_train} / ${m.n_test}`} />
-                      </dl>
-                      <Badge tone="warning" className="mt-3">
-                        {m.data_basis}
-                      </Badge>
-                    </Card>
-                  </div>
+                    <dl className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                      <Meta label="Prediction horizon" value={`T+${p.prediction_horizon_days}`} />
+                      <Meta label="Travel date" value={formatDate(p.travel_date)} />
+                      <Meta label="Model" value={p.model_label ?? "—"} />
+                      <Meta
+                        label="Training observations"
+                        value={formatNumber(p.training_observations)}
+                      />
+                    </dl>
+
+                    <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+                      {p.note}
+                    </p>
+                  </Card>
                 )}
               </QueryBoundary>
             )}
+
+            <Card>
+              <CardHeader title="Model information" />
+              <CardBody className="pt-0">
+                <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                  <Meta label="Model" value={m.algorithm_label ?? m.algorithm ?? "—"} />
+                  <Meta label="Version" value={m.version ?? "—"} />
+                  <Meta label="Last trained" value={formatDate(m.trained_at)} />
+                  <Meta
+                    label="Training observations"
+                    value={formatNumber(m.n_observations)}
+                  />
+                  <Meta
+                    label="Training period"
+                    value={
+                      m.training_period
+                        ? `${formatDate(m.training_period.from)} → ${formatDate(m.training_period.to)}`
+                        : "—"
+                    }
+                  />
+                  <Meta
+                    label="Evaluation"
+                    value={
+                      m.metrics
+                        ? `MAE ${formatCurrency(m.metrics.mae)} · ${m.metrics.interval_coverage_pct}% interval coverage`
+                        : "—"
+                    }
+                  />
+                </dl>
+                {m.basis_label && (
+                  <p className="mt-4 text-xs text-muted-foreground">{m.basis_label}</p>
+                )}
+              </CardBody>
+            </Card>
           </>
         )}
       </QueryBoundary>
@@ -170,11 +186,11 @@ export default function Predictions() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-border py-1.5 last:border-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium tabular-nums">{value}</dd>
+    <div className="border-b border-border pb-2">
+      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 font-medium tabular-nums">{value}</dd>
     </div>
   );
 }

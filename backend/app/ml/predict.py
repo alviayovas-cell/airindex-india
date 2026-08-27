@@ -1,8 +1,9 @@
 """Load the trained fare model and produce range predictions (spec §Part 14).
 
 If no model artifact exists the API returns ``available: false`` with a reason —
-predictions are never fabricated. Predicted values are illustrative and are not
-used anywhere in the AIRINDEX calculation.
+predictions are never fabricated. The model is trained on whatever AIRINDEX
+airfare observations are in the database, and predictions are a fare *range*, not
+a guaranteed fare, and are never used in the AIRINDEX calculation.
 """
 
 from __future__ import annotations
@@ -12,12 +13,24 @@ from datetime import date, timedelta
 from functools import lru_cache
 
 from app.ml import train as _train
+from app.ml.train import MIN_ROWS_DEFAULT
 
-_PREDICTION_DISCLAIMER = (
-    "Predicted fare range trained on the labelled synthetic demonstration dataset. "
-    "Illustrative only — not a purchasing recommendation, and not used in the "
-    "AIRINDEX calculation."
+#: the two genuinely important caveats — it's a range, and it is not circular
+#: with the index. Provenance of the training data is reported in `data_basis`.
+_PREDICTION_NOTE = (
+    "A machine-learning estimate of the likely fare range for a future trip — "
+    "a range, not a guaranteed fare — and not used in the AIRINDEX calculation."
 )
+
+
+def _basis_label(art: dict) -> str:
+    if art.get("data_basis") == "authorized-api":
+        return "Model trained using validated AIRINDEX airfare observations."
+    return (
+        f"Model trained on the current AIRINDEX observation history "
+        f"({art.get('n_observations', art['n_train'] + art['n_test']):,} validated "
+        f"observations)."
+    )
 
 
 @lru_cache(maxsize=1)
@@ -41,9 +54,11 @@ def model_info() -> dict:
     if art is None:
         return {
             "available": False,
+            "min_observations": MIN_ROWS_DEFAULT,
             "reason": (
-                "No fare model has been trained yet. Run `python -m app.ml.train` "
-                "once the database has enough valid observations."
+                f"Prediction unavailable until sufficient historical observations "
+                f"are collected — the model needs at least {MIN_ROWS_DEFAULT} valid "
+                f"observations. Run `python -m app.ml.train` once they exist."
             ),
         }
     return {
@@ -51,12 +66,17 @@ def model_info() -> dict:
         "version": art["version"],
         "trained_at": art["trained_at"],
         "algorithm": art["algorithm"],
+        "algorithm_label": art.get("algorithm_label", "Gradient Boosting"),
         "metrics": art["metrics"],
         "n_train": art["n_train"],
         "n_test": art["n_test"],
+        "n_observations": art.get("n_observations", art["n_train"] + art["n_test"]),
+        "training_period": art.get("training_period"),
         "data_basis": art["data_basis"],
+        "data_sources": art.get("data_sources", {}),
         "features": art["feature_names"],
-        "disclaimer": _PREDICTION_DISCLAIMER,
+        "basis_label": _basis_label(art),
+        "note": _PREDICTION_NOTE,
     }
 
 
@@ -82,7 +102,10 @@ def predict_fare_range(
     if route_id not in spec.routes:
         return {
             "available": False,
-            "reason": f"Route {route_id} is not in the trained model's basket.",
+            "reason": (
+                f"No trained model covers route {route_id} yet — it has no "
+                "historical observations in the training set."
+            ),
         }
 
     if travel_date is None:
@@ -119,7 +142,13 @@ def predict_fare_range(
         "predicted_upper_inr": round(hi, 0),
         "interval": "10th–90th percentile",
         "model_version": art["version"],
+        "model_label": art.get("algorithm_label", "Gradient Boosting"),
         "model_metrics": art["metrics"],
+        "training_observations": art.get(
+            "n_observations", art["n_train"] + art["n_test"]
+        ),
+        "training_period": art.get("training_period"),
+        "trained_at": art["trained_at"],
         "data_basis": art["data_basis"],
-        "disclaimer": _PREDICTION_DISCLAIMER,
+        "note": _PREDICTION_NOTE,
     }

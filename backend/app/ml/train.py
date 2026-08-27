@@ -79,7 +79,18 @@ async def train(min_rows: int = MIN_ROWS_DEFAULT, *, db=None) -> dict:
         for rid in routes
     }
     vol = {v["route_id"]: v["volatility_score"] for v in (await route_volatility(db))["routes"]}
-    min_cd = min(r.get("collection_date", "9999-12-31") for r in rows)
+    collection_dates = [r["collection_date"] for r in rows if r.get("collection_date")]
+    min_cd = min(collection_dates) if collection_dates else "9999-12-31"
+    max_cd = max(collection_dates) if collection_dates else min_cd
+
+    # Provenance of the training data, read from each observation's `source`.
+    source_counts: dict[str, int] = {}
+    for r in rows:
+        source_counts[r.get("source", "unknown")] = (
+            source_counts.get(r.get("source", "unknown"), 0) + 1
+        )
+    authorized = sum(n for s, n in source_counts.items() if s not in ("synthetic", "unknown"))
+    data_basis = "authorized-api" if authorized > len(rows) / 2 else "demonstration"
 
     spec = FeatureSpec(
         routes=routes,
@@ -127,13 +138,17 @@ async def train(min_rows: int = MIN_ROWS_DEFAULT, *, db=None) -> dict:
         "version": version,
         "trained_at": datetime.now(timezone.utc).isoformat(),
         "algorithm": "GradientBoostingRegressor (quantile) x3",
+        "algorithm_label": "Gradient Boosting (quantile regression)",
         "quantiles": [0.1, 0.5, 0.9],
         "spec": spec,
         "models": models,
         "metrics": metrics,
         "n_train": int(len(train_idx)),
         "n_test": int(len(test_idx)),
-        "data_basis": "synthetic-demonstration",
+        "n_observations": len(rows),
+        "training_period": {"from": min_cd, "to": max_cd},
+        "data_basis": data_basis,
+        "data_sources": source_counts,
         "feature_names": spec.feature_names,
     }
     ARTIFACT_DIR.mkdir(exist_ok=True)
@@ -149,7 +164,10 @@ async def train(min_rows: int = MIN_ROWS_DEFAULT, *, db=None) -> dict:
             "metrics": metrics,
             "n_train": artifact["n_train"],
             "n_test": artifact["n_test"],
-            "data_basis": "synthetic-demonstration",
+            "n_observations": len(rows),
+            "training_period": artifact["training_period"],
+            "data_basis": data_basis,
+            "data_sources": source_counts,
         },
     )
     from app.ml.predict import reload_model
