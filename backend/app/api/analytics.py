@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.api.deps import get_current_user
@@ -13,6 +13,7 @@ from app.services.analytics_service import (
     airline_overview,
     lead_time_analysis,
     route_heatmap,
+    route_volatility,
 )
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -51,3 +52,12 @@ async def get_airline_comparison(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> ApiResponse[dict]:
     return ok({"airlines": await airline_overview(db)})
+
+
+@router.get("/volatility", response_model=ApiResponse[dict])
+async def get_volatility(
+    window_days: int = Query(14, ge=3, le=90),
+    _: UserPublic = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> ApiResponse[dict]:
+    return ok(await route_volatility(db, window_days))

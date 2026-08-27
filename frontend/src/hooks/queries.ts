@@ -1,5 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAirlineComparison, fetchLeadTime, fetchRouteHeatmap } from "@/api/analytics";
+import {
+  fetchAirlineComparison,
+  fetchFareSpikes,
+  fetchLeadTime,
+  fetchRouteHeatmap,
+  fetchVolatility,
+  type FareSpikeQuery,
+} from "@/api/analytics";
 import {
   fetchConfig,
   updateIndexConfig,
@@ -47,6 +54,20 @@ export const useLeadTime = (route?: string) =>
 
 export const useRouteHeatmap = () =>
   useQuery({ queryKey: ["analytics", "routes"], queryFn: fetchRouteHeatmap });
+
+export const useVolatility = (windowDays = 14) =>
+  useQuery({
+    queryKey: ["analytics", "volatility", windowDays],
+    queryFn: () => fetchVolatility(windowDays),
+    placeholderData: keepPreviousData,
+  });
+
+export const useFareSpikes = (query: FareSpikeQuery = {}) =>
+  useQuery({
+    queryKey: ["alerts", "fare-spikes", query],
+    queryFn: () => fetchFareSpikes(query),
+    placeholderData: keepPreviousData,
+  });
 
 export const useAirlineComparison = () =>
   useQuery({

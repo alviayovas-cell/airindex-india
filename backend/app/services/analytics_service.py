@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from statistics import mean, median
+from statistics import mean, median, pstdev
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -168,6 +168,91 @@ async def lead_time_analysis(
             }
         )
     return {"route_id": route_id, "windows": windows}
+
+
+# --------------------------------------------------------------------------- #
+# Route price volatility (spec §Part 7)
+#
+# Experimental analytical score — NOT an official statistical volatility measure.
+# Built from the daily route sub-index (which is proportional to the route's
+# standardized fare), so day-to-day % moves are fare moves.
+# --------------------------------------------------------------------------- #
+VOLATILITY_DISCLAIMER = (
+    "Experimental analytical score from daily route sub-index movements. Not an "
+    "official statistical volatility measure."
+)
+#: daily-return std (%) that maps to a score of 100
+_VOL_STD_AT_100 = 5.0
+
+
+def _volatility_category(score: float) -> str:
+    if score > 80:
+        return "Very High"
+    if score > 60:
+        return "High"
+    if score > 30:
+        return "Moderate"
+    return "Low"
+
+
+def _route_index_series(daily: list[dict]) -> dict[str, list[float]]:
+    series: dict[str, list[float]] = {}
+    for point in daily:
+        for rid, val in (point.get("route_index") or {}).items():
+            series.setdefault(rid, []).append(val)
+    return series
+
+
+async def route_volatility(
+    db: AsyncIOMotorDatabase, window_days: int = 14
+) -> dict:
+    routes = await RouteRepository(db).list_active()
+    daily = await IndexRepository(db).daily_series()
+    series = _route_index_series(daily)
+
+    rows: list[dict] = []
+    for r in routes:
+        full = series.get(r.route_id, [])
+        s = full[-window_days:] if window_days and len(full) > window_days else full
+        returns = [
+            100.0 * (s[i] - s[i - 1]) / s[i - 1]
+            for i in range(1, len(s))
+            if s[i - 1]
+        ]
+        ret_std = pstdev(returns) if len(returns) > 1 else 0.0
+        score = min(100.0, round(ret_std / _VOL_STD_AT_100 * 100.0, 1))
+        mean_idx = mean(s) if s else None
+        cv = (
+            round(100.0 * pstdev(s) / mean_idx, 2)
+            if s and len(s) > 1 and mean_idx
+            else None
+        )
+        trend_pct = (
+            round(100.0 * (s[-1] - s[0]) / s[0], 2)
+            if len(s) >= 2 and s[0]
+            else None
+        )
+        rows.append(
+            {
+                "route_id": r.route_id,
+                "label": route_label(r.route_id),
+                "volatility_score": score,
+                "category": _volatility_category(score),
+                "daily_return_std_pct": round(ret_std, 3),
+                "coefficient_of_variation_pct": cv,
+                "trend_pct": trend_pct,
+                "observations": len(s),
+                "sparkline": [round(v, 2) for v in s],
+            }
+        )
+    rows.sort(key=lambda x: x["volatility_score"], reverse=True)
+    return {
+        "window_days": window_days,
+        "method": "population std of daily route sub-index % returns, scaled to 0-100",
+        "categories": {"Low": "0-30", "Moderate": "31-60", "High": "61-80", "Very High": "81-100"},
+        "disclaimer": VOLATILITY_DISCLAIMER,
+        "routes": rows,
+    }
 
 
 async def route_heatmap(db: AsyncIOMotorDatabase) -> list[dict]:

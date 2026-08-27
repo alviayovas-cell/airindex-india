@@ -196,6 +196,8 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/flights` | Observation explorer — filter / sort / paginate + filter options |
 | GET | `/api/flights/search?route_id=&advance_days=` | Ad-hoc live lookup (not stored) |
 | GET | `/api/analytics/lead-time?route=` | Avg / median / count by T+1…T+45 |
+| GET | `/api/analytics/volatility?window_days=` | Per-route experimental volatility score (0–100) + category |
+| GET | `/api/alerts/fare-spikes?window_days=&route_id=&airline=&severity=` | Fare increases vs the preceding period, classified against configurable thresholds |
 | GET | `/api/analytics/routes` | Route heatmap (route-level % change) |
 | GET | `/api/analytics/airlines` | Airline fare comparison |
 | GET | `/api/data-quality` | Totals, per-day breakdown, per-source health |
@@ -294,7 +296,7 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | E          | 30-day validation, Reports + CSV, APScheduler, Vercel/Render configs | ✅ |
 | F          | Data-model & quality hardening, IQR outlier option, runtime index config (`/api/config`) | ✅ |
 | G          | Index Calculation Explorer + "Why did AIRINDEX change?" observed contributors | ✅ |
-| H          | Route price volatility + fare-spike detection & alerts | ⬜ |
+| H          | Route price volatility + fare-spike detection & alerts | ✅ |
 | I          | Interactive India route map + lead-time filters | ⬜ |
 | J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ⬜ |
 | K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ⬜ |

@@ -340,6 +340,37 @@ class AirfareQuoteRepository:
                 node["avg"] = sum(vals) / len(vals) if vals else None
         return out
 
+    async def avg_fare_by_group(
+        self, date_from: str, date_to: str, *, by_airline: bool = False
+    ) -> dict[tuple[str, str, str | None], tuple[float, int]]:
+        """Mean VALID fare per (route, advance_window[, airline]) over a date span.
+        Key = (route_id, advance_window, airline|None); value = (avg_fare, n)."""
+        group_id: dict = {"route": "$route_id", "window": "$advance_window"}
+        if by_airline:
+            group_id["airline"] = "$airline"
+        pipeline = [
+            {
+                "$match": {
+                    "collection_date": {"$gte": date_from, "$lte": date_to},
+                    "status": QuoteStatus.VALID.value,
+                    "total_fare": {"$gt": 0},
+                }
+            },
+            {
+                "$group": {
+                    "_id": group_id,
+                    "avg": {"$avg": "$total_fare"},
+                    "n": {"$sum": 1},
+                }
+            },
+        ]
+        out: dict[tuple[str, str, str | None], tuple[float, int]] = {}
+        async for doc in self.col.aggregate(pipeline):
+            gid = doc["_id"]
+            key = (gid["route"], gid["window"], gid.get("airline"))
+            out[key] = (doc["avg"], doc["n"])
+        return out
+
     async def airline_stats(self) -> list[dict]:
         pipeline = [
             {"$match": {"status": QuoteStatus.VALID.value, "total_fare": {"$gt": 0}}},

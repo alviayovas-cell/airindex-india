@@ -277,6 +277,60 @@ export interface Report {
   rows: ReportRow[];
 }
 
+export interface RouteVolatility {
+  route_id: string;
+  label: string;
+  volatility_score: number;
+  category: "Low" | "Moderate" | "High" | "Very High";
+  daily_return_std_pct: number;
+  coefficient_of_variation_pct: number | null;
+  trend_pct: number | null;
+  observations: number;
+  sparkline: number[];
+}
+
+export interface VolatilityResponse {
+  window_days: number;
+  method: string;
+  categories: Record<string, string>;
+  disclaimer: string;
+  routes: RouteVolatility[];
+}
+
+export type SpikeSeverity =
+  | "Normal"
+  | "Moderate Increase"
+  | "High Increase"
+  | "Critical Increase";
+
+export interface FareSpike {
+  route_id: string;
+  route_label: string;
+  advance_window: string;
+  airline: string | null;
+  current_avg_fare: number;
+  baseline_avg_fare: number;
+  pct_change: number;
+  severity: SpikeSeverity;
+  current_observations: number;
+  baseline_observations: number;
+  detected_at: string;
+}
+
+export interface FareSpikesResponse {
+  available: boolean;
+  message?: string;
+  window_days: number;
+  by_airline: boolean;
+  current_period: { from: string; to: string };
+  baseline_period: { from: string; to: string };
+  thresholds: Record<string, number>;
+  severities: SpikeSeverity[];
+  summary: Record<SpikeSeverity, number>;
+  alerts: FareSpike[];
+  note: string;
+}
+
 export interface IndexCalculationRow {
   route_id: string;
   label: string;

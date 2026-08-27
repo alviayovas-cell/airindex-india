@@ -27,11 +27,13 @@ import { LeadTimeChart } from "@/components/charts/LeadTimeChart";
 import { RouteHeatmap } from "@/components/charts/RouteHeatmap";
 import { Sparkline } from "@/components/charts/Sparkline";
 import {
+  useFareSpikes,
   useIndexHistory,
   useLeadTime,
   useOverview,
   useRouteHeatmap,
   useRoutes,
+  useVolatility,
 } from "@/hooks/queries";
 import {
   formatCurrency,
@@ -50,6 +52,8 @@ export default function Dashboard() {
   const heatmap = useRouteHeatmap();
   const routes = useRoutes();
   const leadTime = useLeadTime();
+  const volatility = useVolatility(14);
+  const spikes = useFareSpikes({ window_days: 7 });
 
   return (
     <div className="space-y-6">
@@ -269,6 +273,105 @@ export default function Dashboard() {
               emptyState={<EmptyState title="No lead-time data" />}
             >
               {(d) => <LeadTimeChart windows={d.windows} height={280} />}
+            </QueryBoundary>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Volatility + fare-spike alerts */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader
+            title="Most volatile routes"
+            description="14-day fare-swing score (experimental)"
+            action={
+              <Link to="/volatility" className="text-xs font-medium text-accent hover:underline">
+                All routes
+              </Link>
+            }
+          />
+          <CardBody className="pt-0">
+            <QueryBoundary
+              query={volatility}
+              skeleton={<div className="space-y-2 py-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-9 animate-skeleton-pulse rounded bg-muted" />)}</div>}
+              isEmpty={(d) => d.routes.length === 0}
+              emptyState={<EmptyState title="No volatility data" />}
+            >
+              {(d) => (
+                <div className="divide-y divide-border">
+                  {d.routes.slice(0, 4).map((r) => (
+                    <div key={r.route_id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <span className="font-medium">{r.label}</span>
+                      <span className="flex items-center gap-3">
+                        <Badge
+                          tone={
+                            r.category === "Very High"
+                              ? "danger"
+                              : r.category === "High"
+                                ? "warning"
+                                : r.category === "Low"
+                                  ? "success"
+                                  : "neutral"
+                          }
+                        >
+                          {r.category}
+                        </Badge>
+                        <span className="w-8 text-right font-semibold tabular-nums">
+                          {r.volatility_score.toFixed(0)}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </QueryBoundary>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Fare spike alerts"
+            description="Average fare rises vs the preceding week"
+            action={
+              <Link to="/alerts" className="text-xs font-medium text-accent hover:underline">
+                View all
+              </Link>
+            }
+          />
+          <CardBody className="pt-0">
+            <QueryBoundary
+              query={spikes}
+              skeleton={<div className="space-y-2 py-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-10 animate-skeleton-pulse rounded bg-muted" />)}</div>}
+              isEmpty={(d) => !d.available}
+              emptyState={<EmptyState title="No index history" />}
+            >
+              {(d) => {
+                const top = d.alerts.filter((a) => a.severity !== "Normal").slice(0, 4);
+                return top.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    No fare spikes this week — average fares are stable.
+                  </p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {top.map((a, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                        <span>
+                          <span className="font-medium">{a.route_label}</span>
+                          <span className="ml-1.5 text-xs text-muted-foreground">{a.advance_window}</span>
+                        </span>
+                        <span className="flex items-center gap-3">
+                          <Badge tone={a.severity === "Critical Increase" ? "danger" : "warning"}>
+                            {a.severity.replace(" Increase", "")}
+                          </Badge>
+                          <span className="w-14 text-right font-semibold tabular-nums text-danger">
+                            +{a.pct_change.toFixed(1)}%
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }}
             </QueryBoundary>
           </CardBody>
         </Card>
