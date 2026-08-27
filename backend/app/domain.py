@@ -58,3 +58,13 @@ ROUTE_BASE_FARE: dict[str, int] = {
 def route_label(route_id: str) -> str:
     origin, _, dest = route_id.partition("-")
     return f"{origin} → {dest}"
+
+
+def advance_window_label(advance_days: int) -> str:
+    """Snap an arbitrary advance-purchase gap to the nearest prototype window."""
+    nearest = min(ADVANCE_WINDOWS, key=lambda w: abs(w - advance_days))
+    return f"T+{nearest}"
+
+
+def nearest_window(advance_days: int) -> int:
+    return min(ADVANCE_WINDOWS, key=lambda w: abs(w - advance_days))

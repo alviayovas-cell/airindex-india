@@ -64,10 +64,14 @@ pip install -r requirements.txt
 cp .env.example .env        # then edit .env  (see "Environment variables" below)
 ```
 
-Seed the database with the route basket, airlines, index config and demo user:
+Seed the database — reference data + a labelled synthetic 30-day airfare dataset
+run through the real cleaning pipeline, plus the computed index:
 
 ```bash
-python -m app.scripts.seed_database
+python -m app.scripts.seed_database          # 30 days (default)
+python -m app.scripts.seed_database --days 45
+python -m app.scripts.seed_database --reference-only   # no synthetic observations
+python -m app.scripts.show_index             # print the computed index
 ```
 
 Run the API (http://localhost:8000, docs at `/docs`):
@@ -206,7 +210,7 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | Checkpoint | Scope                                                        | State |
 | ---------- | ----------------------------------------------------------- | ----- |
 | A          | Shell, design system, auth (JWT), MongoDB connection        | ✅    |
-| B          | Amadeus adapter, normalization, cleaning, index engine, seed data | ⏳ |
+| B          | Amadeus adapter, normalization, cleaning, index engine, seed data | ✅ |
 | C          | Full REST API + Methodology page                           | ⏳    |
 | D          | Dashboard, Route, Lead-time, Data Quality, Airfare Data UI | ⏳    |
 | E          | 30-day back-test, Reports/CSV, tests, deployment            | ⏳    |
