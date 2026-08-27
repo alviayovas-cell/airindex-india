@@ -21,6 +21,7 @@ import { SegmentedControl } from "@/components/common/SegmentedControl";
 import { ChangeIndicator } from "@/components/common/ChangeIndicator";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { IndexMetricCard } from "@/components/dashboard/IndexMetricCard";
+import { WhyChangedCard } from "@/components/dashboard/WhyChangedCard";
 import { IndexTrendChart } from "@/components/charts/IndexTrendChart";
 import { LeadTimeChart } from "@/components/charts/LeadTimeChart";
 import { RouteHeatmap } from "@/components/charts/RouteHeatmap";
@@ -222,6 +223,9 @@ export default function Dashboard() {
           {(d) => (d.index ? <IndexMetricCard index={d.index} /> : <span />)}
         </QueryBoundary>
       </div>
+
+      {/* Why did the index change? */}
+      <WhyChangedCard />
 
       {/* Route performance + lead time */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

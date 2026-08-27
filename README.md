@@ -202,6 +202,8 @@ Every endpoint except `/api/health` and `/api/auth/login` requires
 | GET | `/api/collection/status` | Last collection run |
 | POST | `/api/collection/run?mode=auto\|amadeus\|synthetic` | Trigger a collection + reindex |
 | GET | `/api/methodology` | Base period, basket, weights, formula, rules, disclaimer |
+| GET | `/api/index/calculation?date=` | Per-route weight / route-index / contribution table (rows sum to the index) |
+| GET | `/api/index/explain?date=&compare=` | Largest observed contributors to the index change between two days |
 | GET | `/api/config` | Runtime index config: weights (raw + normalized), base period, outlier method |
 | PUT | `/api/config/weights` | Update route-basket weights (renormalized) and recompute the index |
 | PUT | `/api/config/index` | Update base period / methodology version / outlier method (`mad` \| `iqr`) |
@@ -291,7 +293,7 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | D          | Dashboard, Price Index, Route, Lead-time, Data Quality, Airfare Data, Methodology, Data Sources UI | ✅ |
 | E          | 30-day validation, Reports + CSV, APScheduler, Vercel/Render configs | ✅ |
 | F          | Data-model & quality hardening, IQR outlier option, runtime index config (`/api/config`) | ✅ |
-| G          | Index Calculation Explorer + "Why did AIRINDEX change?" observed contributors | ⬜ |
+| G          | Index Calculation Explorer + "Why did AIRINDEX change?" observed contributors | ✅ |
 | H          | Route price volatility + fare-spike detection & alerts | ⬜ |
 | I          | Interactive India route map + lead-time filters | ⬜ |
 | J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ⬜ |

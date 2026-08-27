@@ -10,6 +10,7 @@ import { CardSkeleton, ChartSkeleton } from "@/components/common/Skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ChangeIndicator } from "@/components/common/ChangeIndicator";
 import { IndexMetricCard } from "@/components/dashboard/IndexMetricCard";
+import { WhyChangedCard } from "@/components/dashboard/WhyChangedCard";
 import { IndexTrendChart } from "@/components/charts/IndexTrendChart";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { useCurrentIndex, useIndexHistory, useRoutes } from "@/hooks/queries";
@@ -145,6 +146,8 @@ export default function PriceIndex() {
           </QueryBoundary>
         </CardBody>
       </Card>
+
+      <WhyChangedCard limit={6} />
     </div>
   );
 }

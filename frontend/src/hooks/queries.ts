@@ -6,6 +6,7 @@ import {
   updateWeights,
   type IndexConfigPatch,
 } from "@/api/config";
+import { fetchIndexCalculation, fetchIndexExplain } from "@/api/explain";
 import { fetchFlights, type FlightQuery } from "@/api/flights";
 import { fetchCurrentIndex, fetchIndexHistory, fetchOverview } from "@/api/index";
 import { fetchMethodology } from "@/api/methodology";
@@ -86,6 +87,20 @@ export const useReport = (query: ReportQuery, enabled = true) =>
 
 export const useConfig = () =>
   useQuery({ queryKey: ["config"], queryFn: fetchConfig });
+
+export const useIndexCalculation = (date?: string) =>
+  useQuery({
+    queryKey: ["index", "calculation", date ?? "latest"],
+    queryFn: () => fetchIndexCalculation(date),
+    placeholderData: keepPreviousData,
+  });
+
+export const useIndexExplain = (date?: string, compare?: string) =>
+  useQuery({
+    queryKey: ["index", "explain", date ?? "latest", compare ?? "prev"],
+    queryFn: () => fetchIndexExplain(date, compare),
+    placeholderData: keepPreviousData,
+  });
 
 export const useUpdateWeights = () => {
   const qc = useQueryClient();

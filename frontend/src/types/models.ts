@@ -277,6 +277,63 @@ export interface Report {
   rows: ReportRow[];
 }
 
+export interface IndexCalculationRow {
+  route_id: string;
+  label: string;
+  weight: number;
+  effective_weight: number;
+  route_index: number;
+  contribution: number;
+}
+
+export interface IndexCalculation {
+  date: string;
+  available_dates: string[];
+  base_period: string | null;
+  methodology_version: string | null;
+  formula: string;
+  index_value: number;
+  recomputed_from_rows: number;
+  rows: IndexCalculationRow[];
+  routes_missing: string[];
+  note: string;
+}
+
+export interface ObservedContributor {
+  route_id: string;
+  label: string;
+  weight: number;
+  route_index_now: number;
+  route_index_prev: number;
+  route_index_change: number;
+  contribution_now: number;
+  contribution_prev: number;
+  contribution_delta: number;
+  avg_fare_now: number | null;
+  avg_fare_prev: number | null;
+  avg_fare_change_pct: number | null;
+}
+
+export interface IndexExplain {
+  available: boolean;
+  message?: string;
+  date: string;
+  compare_date?: string;
+  available_dates?: string[];
+  index_now?: number;
+  index_prev?: number;
+  index_change?: number;
+  index_change_pct?: number | null;
+  observed_contributors?: ObservedContributor[];
+  largest_observed_movement?: {
+    route_id: string;
+    label: string;
+    route_index_change: number;
+  } | null;
+  most_affected_window?: { window: string; abs_change_pct: number } | null;
+  disclaimer?: string;
+}
+
 export interface IndexConfig {
   base_period: string;
   methodology_version: string;

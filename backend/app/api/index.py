@@ -12,6 +12,7 @@ from app.models.common import ApiResponse, ok
 from app.models.index import Frequency
 from app.models.user import UserPublic
 from app.services.analytics_service import current_index
+from app.services.explain_service import index_calculation, index_explain
 
 router = APIRouter(prefix="/index", tags=["index"])
 
@@ -44,6 +45,33 @@ async def get_current(
     if idx is None:
         raise HTTPException(404, "No index has been computed yet. Seed the database.")
     return ok(idx.model_dump())
+
+
+@router.get("/calculation", response_model=ApiResponse[dict])
+async def get_calculation(
+    date: str | None = None,
+    _: UserPublic = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> ApiResponse[dict]:
+    """Per-route weight / route-index / contribution table for one day."""
+    result = await index_calculation(db, date)
+    if result is None:
+        raise HTTPException(404, "No index has been computed yet. Seed the database.")
+    return ok(result)
+
+
+@router.get("/explain", response_model=ApiResponse[dict])
+async def get_explain(
+    date: str | None = None,
+    compare: str | None = None,
+    _: UserPublic = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> ApiResponse[dict]:
+    """Largest observed contributors to the index change between two days."""
+    result = await index_explain(db, date, compare)
+    if result is None:
+        raise HTTPException(404, "No index has been computed yet. Seed the database.")
+    return ok(result)
 
 
 @router.get("/history", response_model=ApiResponse[dict])

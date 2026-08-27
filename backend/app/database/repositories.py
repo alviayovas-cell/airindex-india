@@ -303,6 +303,43 @@ class AirfareQuoteRepository:
         rows.sort(key=lambda r: r["date"])
         return rows
 
+    async def route_window_avg_fare(self, dates: list[str]) -> dict:
+        """{collection_date: {route_id: {"avg": mean-of-window-means,
+        "windows": {advance_window: avg_fare}}}} for VALID rows on the given dates."""
+        if not dates:
+            return {}
+        pipeline = [
+            {
+                "$match": {
+                    "collection_date": {"$in": dates},
+                    "status": QuoteStatus.VALID.value,
+                    "total_fare": {"$gt": 0},
+                }
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "date": "$collection_date",
+                        "route": "$route_id",
+                        "window": "$advance_window",
+                    },
+                    "avg": {"$avg": "$total_fare"},
+                }
+            },
+        ]
+        out: dict = {}
+        async for doc in self.col.aggregate(pipeline):
+            key = doc["_id"]
+            node = out.setdefault(key["date"], {}).setdefault(
+                key["route"], {"windows": {}}
+            )
+            node["windows"][key["window"]] = doc["avg"]
+        for day in out.values():
+            for node in day.values():
+                vals = list(node["windows"].values())
+                node["avg"] = sum(vals) / len(vals) if vals else None
+        return out
+
     async def airline_stats(self) -> list[dict]:
         pipeline = [
             {"$match": {"status": QuoteStatus.VALID.value, "total_fare": {"$gt": 0}}},
