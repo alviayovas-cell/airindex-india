@@ -290,3 +290,10 @@ Full methodology is versioned and shown on the in-app **Methodology** page.
 | C          | Full REST API (21 endpoints) wired to the index engine     | ✅    |
 | D          | Dashboard, Price Index, Route, Lead-time, Data Quality, Airfare Data, Methodology, Data Sources UI | ✅ |
 | E          | 30-day validation, Reports + CSV, APScheduler, Vercel/Render configs | ✅ |
+| F          | Data-model & quality hardening, IQR outlier option, runtime index config (`/api/config`) | ✅ |
+| G          | Index Calculation Explorer + "Why did AIRINDEX change?" observed contributors | ⬜ |
+| H          | Route price volatility + fare-spike detection & alerts | ⬜ |
+| I          | Interactive India route map + lead-time filters | ⬜ |
+| J          | Data-quality dashboard filters + government-style reports (PDF/JSON) + backtest limitations | ⬜ |
+| K          | AI Assistant (`/api/ai/ask`, Claude, structured-context retrieval) | ⬜ |
+| L          | ML fare prediction, festival analysis, security/testing/UX/docs pass | ⬜ |
