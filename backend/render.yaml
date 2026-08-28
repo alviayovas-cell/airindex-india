@@ -42,7 +42,9 @@ services:
       - key: COLLECTION_INTERVAL_MINUTES
         value: "60"
       - key: CORS_ORIGINS
-        sync: false # set to your Vercel URL, e.g. https://airindex.vercel.app
+        sync: false # set to your Vercel URL, e.g. https://airindex.vercel.app  (or *)
+      - key: CORS_ORIGIN_REGEX
+        sync: false # optional, e.g. https://.*\.vercel\.app for preview deploys
       # AI assistant — leave AI_ENABLED=false to use the built-in rule-based engine.
       - key: AI_ENABLED
         value: "false"

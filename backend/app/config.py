@@ -59,11 +59,20 @@ class Settings(BaseSettings):
         return bool(self.ai_enabled and self.anthropic_api_key)
 
     # ---- CORS ----
+    # Comma-separated allowed origins, or "*" for any. Surrounding quotes and
+    # trailing slashes are tolerated so a copy-paste from a dashboard still works.
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Optional regex, e.g. "https://.*\\.vercel\\.app" to also allow preview URLs.
+    cors_origin_regex: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        cleaned = [
+            o.strip().strip("'\"").rstrip("/")
+            for o in self.cors_origins.split(",")
+            if o.strip()
+        ]
+        return ["*"] if "*" in cleaned else cleaned
 
     @property
     def amadeus_configured(self) -> bool:
