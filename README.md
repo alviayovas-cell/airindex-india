@@ -273,16 +273,28 @@ Or create a **Web Service** manually:
 - Build `pip install -r requirements.txt` · Start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Health check path `/api/health`
 - Env vars: `MONGODB_URI`, `DATABASE_NAME`, `JWT_SECRET`, `DEMO_USER_PASSWORD`,
-  `AMADEUS_CLIENT_ID/SECRET` (optional), and **`CORS_ORIGINS`** = your Vercel URL
-  (e.g. `https://airindex.vercel.app`)
+  `CORS_ORIGINS` = your Vercel URL (e.g. `https://airindex.vercel.app`),
+  `AMADEUS_CLIENT_ID/SECRET` (optional), `AI_ENABLED` + `ANTHROPIC_API_KEY` (optional)
 
-After first deploy, seed once from the Render Shell:
-`python -m app.scripts.seed_database`
+The extra dependencies (`scikit-learn`, `numpy`, `scipy`, `reportlab`) push the
+slug past what Render's **free** plan reliably builds — use the **Starter** plan
+for the backend, or drop those lines from `requirements.txt` if you don't need
+PDF reports or fare prediction.
+
+After first deploy, from the Render **Shell**:
+
+```bash
+python -m app.scripts.seed_database   # reference data + 30-day dataset + index
+python -m app.ml.train                # optional — trains the fare-prediction model
+```
 
 ### 3. Frontend — Vercel
 Import the repo, set **Root Directory** to `frontend` (`vercel.json` handles the
 Vite build + SPA rewrites). Add one env var: `VITE_API_BASE_URL` =
 `https://<your-render-app>.onrender.com/api`.
+
+Then set the backend's `CORS_ORIGINS` to the Vercel URL Vercel gives you and
+redeploy the backend.
 
 ### Local demo fallback
 If deployment is unavailable, the whole product runs locally from the seed data
