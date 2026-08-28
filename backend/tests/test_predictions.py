@@ -1,13 +1,19 @@
-"""Fare-range prediction (spec §Part 14) and festival analysis (spec §Part 15)."""
+"""Fare-range prediction (spec §Part 14).
+
+Skipped entirely on a trimmed deployment where numpy / scikit-learn are absent —
+the API degrades to `{available: false}` and every other feature is unaffected.
+"""
 
 import pytest
 import pytest_asyncio
 
-from app.ml import predict as predict_mod
-from app.ml import train as train_mod
-from app.services.collection_service import seed_history
-from app.services.festival_service import analyze_festivals
-from app.services.reference_data import seed_reference_data
+pytest.importorskip("numpy")
+pytest.importorskip("sklearn")
+
+from app.ml import predict as predict_mod  # noqa: E402
+from app.ml import train as train_mod  # noqa: E402
+from app.services.collection_service import seed_history  # noqa: E402
+from app.services.reference_data import seed_reference_data  # noqa: E402
 
 
 @pytest_asyncio.fixture
@@ -28,10 +34,8 @@ def _data(resp):
     return body["data"]
 
 
-# ---- prediction ------------------------------------------------------------
-
 def test_prediction_unavailable_without_model(api, tmp_path, monkeypatch):
-    monkeypatch.setattr(train_mod, "MODEL_PATH", tmp_path / "none.pkl")
+    monkeypatch.setattr(predict_mod, "MODEL_PATH", tmp_path / "none.pkl")
     predict_mod.reload_model()
     d = _data(api.get("/api/predictions/status"))
     assert d["available"] is False
@@ -46,6 +50,7 @@ def test_prediction_unavailable_without_model(api, tmp_path, monkeypatch):
 async def test_train_then_predict_range(seeded_db, tmp_path, monkeypatch):
     monkeypatch.setattr(train_mod, "MODEL_PATH", tmp_path / "fare_model.pkl")
     monkeypatch.setattr(train_mod, "ARTIFACT_DIR", tmp_path)
+    monkeypatch.setattr(predict_mod, "MODEL_PATH", tmp_path / "fare_model.pkl")
     predict_mod.reload_model()
 
     art = await train_mod.train(min_rows=100, db=seeded_db)
@@ -55,9 +60,8 @@ async def test_train_then_predict_range(seeded_db, tmp_path, monkeypatch):
 
     info = predict_mod.model_info()
     assert info["available"] is True
-    # provenance is derived from the observations' `source`, not hard-coded
     assert info["data_basis"] in {"demonstration", "authorized-api"}
-    assert info["data_sources"]  # non-empty source breakdown
+    assert info["data_sources"]
     assert info["training_period"]["from"] <= info["training_period"]["to"]
 
     p = predict_mod.predict_fare_range(
@@ -84,32 +88,5 @@ async def test_train_refuses_on_too_little_data(seeded_db, tmp_path, monkeypatch
     assert "need >=" in out["reason"]
 
 
-# ---- festivals -----------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_festival_analysis(seeded_db):
-    result = await analyze_festivals(seeded_db)
-    assert result["available"] is True
-    assert result["normal_avg_fare"] > 0
-    names = {e["name"] for e in result["events"]}
-    assert "Independence Day" in names
-    # events inside the travel-date window carry observations; far-future ones don't
-    in_range = [e for e in result["events"] if e["in_data_range"]]
-    assert in_range and all(e["event_observations"] >= 0 for e in in_range)
-    far = next(e for e in result["events"] if e["name"] == "New Year")
-    assert far["in_data_range"] is False and far["observed_change_pct"] is None
-    assert "not evidence that the event caused" in result["disclaimer"]
-
-
-def test_festivals_endpoint_and_filter(api):
-    d = _data(api.get("/api/analytics/festivals"))
-    assert d["available"] is True and len(d["events"]) >= 5
-
-    one = _data(api.get("/api/analytics/festivals?event=Independence Day&route_id=DEL-BOM"))
-    assert len(one["events"]) == 1
-    assert one["filters"]["route_id"] == "DEL-BOM"
-
-
 def test_predictions_require_auth(client):
     assert client.get("/api/predictions/fare?route_id=DEL-BOM").status_code == 401
-    assert client.get("/api/analytics/festivals").status_code == 401

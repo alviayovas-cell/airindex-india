@@ -88,15 +88,21 @@ def test_report_full_sections_and_shortcut(api):
 
 
 def test_report_csv_and_pdf_formats(api):
+    from app.services.report_pdf import PDF_AVAILABLE
+
     csv = api.get("/api/reports?frequency=daily&format=csv")
     assert csv.status_code == 200
     assert csv.headers["content-type"].startswith("text/csv")
     assert csv.text.splitlines()[0].startswith("period,average_fare")
 
     pdf = api.get("/api/reports/monthly?format=pdf")
-    assert pdf.status_code == 200
-    assert pdf.headers["content-type"] == "application/pdf"
-    assert pdf.content[:4] == b"%PDF"
+    if PDF_AVAILABLE:
+        assert pdf.status_code == 200
+        assert pdf.headers["content-type"] == "application/pdf"
+        assert pdf.content[:4] == b"%PDF"
+    else:
+        assert pdf.status_code == 400
+        assert "not available" in pdf.json()["message"].lower()
 
     bad = api.get("/api/reports?format=xml")
     assert bad.status_code == 400

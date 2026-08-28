@@ -8,13 +8,15 @@ import { SegmentedControl } from "@/components/common/SegmentedControl";
 import { QueryBoundary } from "@/components/common/QueryBoundary";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ChangeIndicator } from "@/components/common/ChangeIndicator";
-import { useReport, useRoutes } from "@/hooks/queries";
+import { useHealth, useReport, useRoutes } from "@/hooks/queries";
 import { downloadReportFile, type ReportQuery } from "@/api/validation";
 import { formatCurrency, formatDate, formatIndex, formatNumber, formatPercent } from "@/utils/format";
 import type { Frequency } from "@/types/models";
 
 export default function Reports() {
   const routes = useRoutes();
+  const health = useHealth();
+  const pdfEnabled = health.data?.features?.pdf_export ?? true;
   const [form, setForm] = useState({
     date_from: "",
     date_to: "",
@@ -146,9 +148,11 @@ export default function Reports() {
                   description={`${d.summary.period_count} ${d.summary.frequency} periods${d.summary.route_id ? ` · ${d.summary.route_id}` : ""}`}
                   action={
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="secondary" size="sm" loading={downloading === "pdf"} onClick={() => download("pdf")}>
-                        <FileText className="h-3.5 w-3.5" /> PDF
-                      </Button>
+                      {pdfEnabled && (
+                        <Button variant="secondary" size="sm" loading={downloading === "pdf"} onClick={() => download("pdf")}>
+                          <FileText className="h-3.5 w-3.5" /> PDF
+                        </Button>
+                      )}
                       <Button variant="secondary" size="sm" loading={downloading === "csv"} onClick={() => download("csv")}>
                         <FileDown className="h-3.5 w-3.5" /> CSV
                       </Button>

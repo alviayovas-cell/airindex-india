@@ -1,3 +1,5 @@
+# Core runtime — fits Render's free plan.
+# PDF export + ML fare prediction need the extras in requirements-ml.txt.
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 motor==3.6.0
@@ -11,7 +13,4 @@ python-multipart==0.0.20
 httpx==0.28.1
 apscheduler==3.11.0
 python-dotenv==1.0.1
-reportlab==4.2.5
 anthropic==1.1.0
-scikit-learn==1.5.2
-numpy==2.1.3

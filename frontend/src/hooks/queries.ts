@@ -23,6 +23,7 @@ import {
 } from "@/api/config";
 import { fetchIndexCalculation, fetchIndexExplain } from "@/api/explain";
 import { askAi, fetchAiStatus, type AiTurn } from "@/api/ai";
+import { fetchHealth } from "@/api/meta";
 import { fetchFlights, type FlightQuery } from "@/api/flights";
 import { fetchCurrentIndex, fetchIndexHistory, fetchOverview } from "@/api/index";
 import { fetchMethodology } from "@/api/methodology";
@@ -173,6 +174,9 @@ export const useUpdateIndexConfig = () => {
 
 export const useAiStatus = () =>
   useQuery({ queryKey: ["ai", "status"], queryFn: fetchAiStatus, staleTime: 5 * 60_000 });
+
+export const useHealth = () =>
+  useQuery({ queryKey: ["health"], queryFn: fetchHealth, staleTime: 5 * 60_000 });
 
 export const useAskAi = () =>
   useMutation({

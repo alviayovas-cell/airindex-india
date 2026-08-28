@@ -1,6 +1,12 @@
 # Render blueprint for the AIRINDEX backend.
 # Create the service from the Render dashboard ("New +" -> "Blueprint") pointed at
 # this repo, or configure a Web Service manually with the settings below.
+#
+# `requirements.txt` is the core install and fits the free plan. PDF report
+# export and ML fare prediction need `requirements-ml.txt` (~200 MB extra) —
+# switch buildCommand to `pip install -r requirements-ml.txt` and use a plan with
+# more build memory (Starter+). Without it those two features return a clear
+# "not available on this deployment" message and everything else works.
 services:
   - type: web
     name: airindex-api

@@ -12,8 +12,7 @@ import pickle
 from datetime import date, timedelta
 from functools import lru_cache
 
-from app.ml import train as _train
-from app.ml.train import MIN_ROWS_DEFAULT
+from app.ml.paths import MIN_ROWS_DEFAULT, MODEL_PATH, prediction_deps_installed
 
 #: the two genuinely important caveats — it's a range, and it is not circular
 #: with the index. Provenance of the training data is reported in `data_basis`.
@@ -35,11 +34,10 @@ def _basis_label(art: dict) -> str:
 
 @lru_cache(maxsize=1)
 def _load() -> dict | None:
-    path = _train.MODEL_PATH
-    if not path.exists():
+    if not prediction_deps_installed() or not MODEL_PATH.exists():
         return None
     try:
-        with path.open("rb") as f:
+        with MODEL_PATH.open("rb") as f:
             return pickle.load(f)
     except Exception:  # noqa: BLE001 - a corrupt artifact should not 500 the API
         return None
@@ -52,6 +50,16 @@ def reload_model() -> None:
 def model_info() -> dict:
     art = _load()
     if art is None:
+        if not prediction_deps_installed():
+            return {
+                "available": False,
+                "min_observations": MIN_ROWS_DEFAULT,
+                "reason": (
+                    "Fare prediction is not enabled on this deployment — its "
+                    "machine-learning dependencies are not installed. Every other "
+                    "AIRINDEX feature is unaffected."
+                ),
+            }
         return {
             "available": False,
             "min_observations": MIN_ROWS_DEFAULT,

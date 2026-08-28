@@ -61,7 +61,8 @@ Amadeus API ─► Collector adapters ─► Normalizer ─► Cleaner / quality
 cd backend
 python -m venv .venv
 # Windows:  .venv\Scripts\activate       macOS/Linux:  source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-ml.txt      # core + PDF export + ML fare prediction
+# (or just `requirements.txt` for the lean core — skips PDF + prediction)
 
 cp .env.example .env        # then edit .env  (see "Environment variables" below)
 ```
@@ -276,16 +277,18 @@ Or create a **Web Service** manually:
   `CORS_ORIGINS` = your Vercel URL (e.g. `https://airindex.vercel.app`),
   `AMADEUS_CLIENT_ID/SECRET` (optional), `AI_ENABLED` + `ANTHROPIC_API_KEY` (optional)
 
-The extra dependencies (`scikit-learn`, `numpy`, `scipy`, `reportlab`) push the
-slug past what Render's **free** plan reliably builds — use the **Starter** plan
-for the backend, or drop those lines from `requirements.txt` if you don't need
-PDF reports or fare prediction.
+`requirements.txt` is the **core install and fits the free plan**. PDF report
+export and ML fare prediction need `requirements-ml.txt` (`scikit-learn`, `numpy`,
+`reportlab` — ~200 MB): set the build command to
+`pip install -r requirements-ml.txt` and use **Starter** (more build memory).
+Without it, those two features return a clear *"not available on this deployment"*
+message and every other feature works normally.
 
 After first deploy, from the Render **Shell**:
 
 ```bash
 python -m app.scripts.seed_database   # reference data + 30-day dataset + index
-python -m app.ml.train                # optional — trains the fare-prediction model
+python -m app.ml.train                # only if you installed requirements-ml.txt
 ```
 
 ### 3. Frontend — Vercel

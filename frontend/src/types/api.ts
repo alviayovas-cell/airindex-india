@@ -26,4 +26,9 @@ export interface HealthData {
   database_connected: boolean;
   amadeus_configured: boolean;
   environment: string;
+  features?: {
+    pdf_export: boolean;
+    fare_prediction: boolean;
+    ai_assistant: boolean;
+  };
 }

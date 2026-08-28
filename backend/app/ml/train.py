@@ -19,20 +19,16 @@ import asyncio
 import pickle
 import sys
 from datetime import datetime, timezone
-from pathlib import Path
 
 import numpy as np
 
 from app.database.connection import Database
 from app.database.repositories import AirfareQuoteRepository, ConfigRepository
+from app.ml.paths import ARTIFACT_DIR, MIN_ROWS_DEFAULT, MODEL_PATH
 from app.services.analytics_service import route_volatility
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
-
-ARTIFACT_DIR = Path(__file__).parent / "artifacts"
-MODEL_PATH = ARTIFACT_DIR / "fare_model.pkl"
-MIN_ROWS_DEFAULT = 400
 
 
 def _split_by_time(dates: list[str], test_frac: float = 0.2) -> tuple[np.ndarray, np.ndarray]:

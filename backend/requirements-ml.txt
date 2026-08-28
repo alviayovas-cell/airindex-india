@@ -1,0 +1,10 @@
+# Full install: core + PDF report export (reportlab) + ML fare prediction
+# (scikit-learn / numpy).  ~200 MB of packages — use a host with >= 1 GB build
+# RAM (Render Starter+, Hugging Face Spaces, Cloud Run, a VM, or local dev).
+#
+#   pip install -r requirements-ml.txt
+#
+-r requirements.txt
+reportlab==4.2.5
+scikit-learn==1.5.2
+numpy==2.1.3

@@ -18,7 +18,7 @@ from app.database.connection import get_database
 from app.models.common import ApiResponse, ok
 from app.models.index import Frequency
 from app.models.user import UserPublic
-from app.services.report_pdf import build_report_pdf
+from app.services.report_pdf import PDF_AVAILABLE, PdfUnavailable, build_report_pdf
 from app.services.report_service import build_full_report, report_rows_csv
 
 router = APIRouter(tags=["reports"])
@@ -37,6 +37,11 @@ async def _report_response(
 ):
     if fmt not in _FORMATS:
         raise AppError(f"format must be one of: {', '.join(sorted(_FORMATS))}")
+    if fmt == "pdf" and not PDF_AVAILABLE:
+        raise AppError(
+            "PDF export is not available on this deployment. Use format=csv or "
+            "format=json."
+        )
 
     report = await build_full_report(
         db,
@@ -55,8 +60,12 @@ async def _report_response(
             headers={"Content-Disposition": f'attachment; filename="{base}.csv"'},
         )
     if fmt == "pdf":
+        try:
+            content = build_report_pdf(report)
+        except PdfUnavailable as exc:
+            raise AppError(str(exc)) from exc
         return Response(
-            content=build_report_pdf(report),
+            content=content,
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{base}.pdf"'},
         )

@@ -1,7 +1,9 @@
 """Government-style PDF rendering of a full report (spec §Part 16).
 
-Uses reportlab (pure-python, Render-safe). Every number comes from the report
-dict built by ``report_service.build_full_report`` — no separate calculations.
+Uses reportlab. When reportlab is not installed (a trimmed deployment — see
+``requirements-ml.txt``) ``PDF_AVAILABLE`` is False and the endpoint offers CSV /
+JSON instead. Every number comes from the report dict built by
+``report_service.build_full_report`` — no separate calculations.
 """
 
 from __future__ import annotations
@@ -9,24 +11,35 @@ from __future__ import annotations
 import io
 from datetime import datetime
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import (
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
 
-_ACCENT = colors.HexColor("#5b5bd6")
-_MUTED = colors.HexColor("#64748b")
-_LINE = colors.HexColor("#e2e8f0")
+    PDF_AVAILABLE = True
+except ImportError:  # pragma: no cover - trimmed deployment
+    PDF_AVAILABLE = False
+
+
+class PdfUnavailable(RuntimeError):
+    """Raised when a PDF is requested but reportlab is not installed."""
+
+
+def _c(hex_: str):
+    return colors.HexColor(hex_)
 
 
 def _styles():
+    _MUTED = _c("#64748b")
+    _ACCENT = _c("#5b5bd6")
     ss = getSampleStyleSheet()
     ss.add(ParagraphStyle("Sub", parent=ss["Normal"], textColor=_MUTED, fontSize=9))
     ss.add(
@@ -62,6 +75,7 @@ def _fmt_pct(v) -> str:
 
 
 def _table(data: list[list[str]], col_widths=None) -> Table:
+    _MUTED, _LINE = _c("#64748b"), _c("#e2e8f0")
     t = Table(data, colWidths=col_widths, hAlign="LEFT")
     t.setStyle(
         TableStyle(
@@ -80,6 +94,11 @@ def _table(data: list[list[str]], col_widths=None) -> Table:
 
 
 def build_report_pdf(report: dict) -> bytes:
+    if not PDF_AVAILABLE:
+        raise PdfUnavailable(
+            "PDF export is not available on this deployment. Use format=csv or "
+            "format=json."
+        )
     ss = _styles()
     story: list = []
 
